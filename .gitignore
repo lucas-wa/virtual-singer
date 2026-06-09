@@ -1,0 +1,27 @@
+# Ambientes
+.venv/
+__pycache__/
+*.pyc
+
+# Modelos pré-treinados (grandes, baixados via setup_models.py)
+models/
+checkpoints/
+*.ckpt
+*.pth
+*.onnx
+
+# Dados de usuário — NUNCA versionar vozes gravadas
+data/voices/
+!data/voices/.gitkeep
+
+# Saídas geradas
+out/
+*.wav
+!data/songs/**/*.wav
+
+# Repositórios vendored (DiffSinger / RVC) baixados pelo setup
+third_party/
+
+# Sistema
+.DS_Store
+Thumbs.db

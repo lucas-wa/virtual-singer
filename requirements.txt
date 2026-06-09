@@ -1,0 +1,38 @@
+# --- PyTorch (instalar com CUDA conforme sua GPU) ---
+# Recomendado instalar separadamente escolhendo o build CUDA certo, ex.:
+#   pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu124
+torch
+torchaudio
+
+# --- Áudio / DSP ---
+librosa>=0.10
+soundfile
+numpy<2.0
+scipy
+praat-parselmouth        # extração de F0 (pitch)
+pyworld                  # vocoder/analise paramétrica usada por RVC/DiffSinger
+demucs                   # separação de fontes (instrumental / limpeza de amostras)
+
+# --- Partitura / música ---
+music21                  # parse de MusicXML
+pretty_midi              # parse de MIDI
+mido
+
+# --- Texto / fonemas (G2P) ---
+phonemizer               # requer espeak-ng instalado no sistema
+g2p_en                   # G2P para inglês (fallback offline)
+
+# --- Conversão de voz (RVC) ---
+faiss-cpu                # índice de retrieval do RVC
+fairseq                  # ContentVec/HuBERT features
+praat-parselmouth
+
+# --- UI / utilidades ---
+gradio>=4.0
+tqdm
+pyyaml
+requests
+huggingface_hub          # download de pesos pré-treinados
+
+# NOTA: DiffSinger e RVC são clonados como repositórios (não são pacotes PyPI limpos).
+# scripts/setup_models.py cuida do download dos pesos; veja README.md.
