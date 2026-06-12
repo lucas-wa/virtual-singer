@@ -68,6 +68,8 @@ python scripts/make_demo_song.py     # gera a música de demonstração (domíni
 | Etapa | Status | Precisa de |
 |---|---|---|
 | Front-end de partitura (`src/score`) | ✅ testado | só `pretty_midi`, `music21`, `g2p_en` |
+| Importador/validador (`scripts/import_score.py`) | ✅ testado | idem |
+| Transcrição automática AMT (`src/transcribe`, `scripts/transcribe.py`) | ✅ testado | `librosa` (roda no 3.13) |
 | Conversão p/ formato DiffSinger (`src/svs/ds_format`) | ✅ testado | nada extra |
 | Detecção de hardware / mixagem / E/S | ✅ testado | `torch` (detecção), `soundfile` (E/S) |
 | Síntese SVS (DiffSinger) | ⏳ requer setup | Python 3.10 + GPU + pesos |
@@ -77,15 +79,29 @@ python scripts/make_demo_song.py     # gera a música de demonstração (domíni
 ## Uso
 
 ```powershell
-# 1. Treinar o modelo de voz a partir das suas gravações (>= 5 min em data/voices/<nome>/)
+# 1. Obter uma partitura (escolha UMA opção):
+#    a) importar um MusicXML/MIDI que VOCÊ exportou (ex.: do MuseScore)
+python scripts/import_score.py minha_musica.musicxml --name minha_musica
+#    b) transcrever automaticamente a partir de VOCÊ cantando/tocando a melodia
+python scripts/transcribe.py minha_melodia.wav --name minha_musica --lyrics letra.txt
+
+# 2. Treinar o modelo de voz a partir das suas gravações (>= 5 min em data/voices/<nome>/)
 python scripts/train_voice.py --voice data/voices/meu_nome
 
-# 2. Sintetizar uma partitura na sua voz
-python -m src.pipeline --song data/songs/demo --voice meu_nome --out out/demo.wav
+# 3. Sintetizar a partitura na sua voz
+python -m src.pipeline --song data/songs/minha_musica --voice meu_nome --out out/demo.wav
 
-# 3. Ou usar a interface gráfica
+# 4. Ou usar a interface gráfica
 python app/gradio_app.py
 ```
+
+### Obtendo a partitura — só material que você tem direito de usar
+
+A música entra como **partitura (melodia + letra)**, nunca como gravação comercial. Fontes
+legítimas: uma transcrição que **você** fez (MuseScore), a sua própria voz/instrumento
+transcritos automaticamente (`scripts/transcribe.py`), domínio público ou licença aberta.
+**Não** use o transcritor sobre gravações comerciais de terceiros nem baixe partituras de
+catálogos protegidos. Veja [`CONSENT.md`](CONSENT.md).
 
 ## Estrutura
 

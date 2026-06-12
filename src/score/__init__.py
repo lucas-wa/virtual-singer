@@ -9,5 +9,10 @@ from __future__ import annotations
 
 from .model import Note, Phoneme, Performance
 from .build import build_performance, load_score_dir
+from .validate import validate, ValidationReport
 
-__all__ = ["Note", "Phoneme", "Performance", "build_performance", "load_score_dir"]
+__all__ = [
+    "Note", "Phoneme", "Performance",
+    "build_performance", "load_score_dir",
+    "validate", "ValidationReport",
+]
