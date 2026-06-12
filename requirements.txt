@@ -22,11 +22,6 @@ mido
 phonemizer               # requer espeak-ng instalado no sistema
 g2p_en                   # G2P para inglês (fallback offline)
 
-# --- Conversão de voz (RVC) ---
-faiss-cpu                # índice de retrieval do RVC
-fairseq                  # ContentVec/HuBERT features
-praat-parselmouth
-
 # --- UI / utilidades ---
 gradio>=4.0
 tqdm
@@ -34,5 +29,12 @@ pyyaml
 requests
 huggingface_hub          # download de pesos pré-treinados
 
-# NOTA: DiffSinger e RVC são clonados como repositórios (não são pacotes PyPI limpos).
-# scripts/setup_models.py cuida do download dos pesos; veja README.md.
+# NOTA 1: DiffSinger e RVC são clonados como repositórios (não são pacotes PyPI limpos).
+#         scripts/setup_models.py cuida do download dos pesos; veja README.md.
+#
+# NOTA 2 (RVC): faiss-cpu e fairseq foram TIRADOS daqui de propósito — o fairseq quebra
+#         o build com pip>=24.1 (metadata inválida do omegaconf<2.1). Instale o "extra do
+#         RVC" à parte, com o pip rebaixado:
+#             pip install "pip<24.1"
+#             pip install fairseq==0.12.2 faiss-cpu
+#         (no Colab, isto é uma célula separada — veja o notebook.)

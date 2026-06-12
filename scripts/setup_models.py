@@ -30,11 +30,10 @@ RVC_FILES = [
     ("lj1995/VoiceConversionWebUI", "rmvpe.pt", paths.RVC_BASE_DIR / "rmvpe.pt"),
 ]
 
-# NSF-HiFiGAN (vocoder) — release do OpenVPI. Baixe o zip e extraia em models/nsf_hifigan.
-VOCODER_HF = ("openvpi/vocoders", "nsf_hifigan_44.1k_hop512_128bin_2024.02/model.ckpt",
-              paths.VOCODER_DIR / "model.ckpt")
-VOCODER_CONFIG = ("openvpi/vocoders", "nsf_hifigan_44.1k_hop512_128bin_2024.02/config.yaml",
-                  paths.VOCODER_DIR / "config.yaml")
+# NSF-HiFiGAN (vocoder) — release do OpenVPI (zip do GitHub, extraído em models/nsf_hifigan).
+VOCODER_ZIP_URL = ("https://github.com/openvpi/vocoders/releases/download/"
+                   "nsf-hifigan-44.1k-hop512-128bin-2024.02/"
+                   "nsf_hifigan_44.1k_hop512_128bin_2024.02.zip")
 
 # Repositórios para clonar
 REPOS = [
@@ -48,16 +47,17 @@ REPOS = [
 DIFFSINGER_EN = ("AnnaWegmann/diffsinger-en-placeholder", "model.ckpt",
                  paths.DIFFSINGER_DIR / "model.ckpt")
 
-# Checkpoints do SadTalker (avatar). Disponíveis no Hugging Face (vinthony/SadTalker).
-# Os pesos do GFPGAN são baixados automaticamente pelo SadTalker em tempo de execução.
+# Checkpoints do SadTalker (avatar) — repo HF correto: vinthony/SadTalker-V002rc.
+# Os pesos do GFPGAN/face-detection são baixados automaticamente pelo SadTalker em runtime.
+_SADTALKER_REPO_ID = "vinthony/SadTalker-V002rc"
 SADTALKER_FILES = [
-    ("vinthony/SadTalker", "SadTalker_V0.0.2_256.safetensors",
+    (_SADTALKER_REPO_ID, "SadTalker_V0.0.2_256.safetensors",
      paths.SADTALKER_CKPT / "SadTalker_V0.0.2_256.safetensors"),
-    ("vinthony/SadTalker", "SadTalker_V0.0.2_512.safetensors",
+    (_SADTALKER_REPO_ID, "SadTalker_V0.0.2_512.safetensors",
      paths.SADTALKER_CKPT / "SadTalker_V0.0.2_512.safetensors"),
-    ("vinthony/SadTalker", "mapping_00109-model.pth.tar",
+    (_SADTALKER_REPO_ID, "mapping_00109-model.pth.tar",
      paths.SADTALKER_CKPT / "mapping_00109-model.pth.tar"),
-    ("vinthony/SadTalker", "mapping_00229-model.pth.tar",
+    (_SADTALKER_REPO_ID, "mapping_00229-model.pth.tar",
      paths.SADTALKER_CKPT / "mapping_00229-model.pth.tar"),
 ]
 
@@ -78,6 +78,24 @@ def _hf_download(repo_id: str, filename: str, dest: Path) -> None:
         print(f"    ! falhou ({e}). Baixe manualmente e coloque em {dest}")
 
 
+def _download_and_extract_zip(url: str, dest_dir: Path) -> None:
+    import io
+    import zipfile
+
+    import requests
+
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    print(f"  ↓ {url}")
+    try:
+        resp = requests.get(url, timeout=120)
+        resp.raise_for_status()
+        with zipfile.ZipFile(io.BytesIO(resp.content)) as z:
+            z.extractall(dest_dir)
+        print(f"    → extraído em {dest_dir}")
+    except Exception as e:  # noqa: BLE001
+        print(f"    ! falhou ({e}). Baixe manualmente e extraia em {dest_dir}")
+
+
 def _clone(url: str, dest: Path) -> None:
     if dest.exists():
         print(f"  = já existe: {dest}")
@@ -96,9 +114,8 @@ def setup_rvc() -> None:
 
 
 def setup_vocoder() -> None:
-    print("[NSF-HiFiGAN] vocoder")
-    for repo, fname, dest in (VOCODER_HF, VOCODER_CONFIG):
-        _hf_download(repo, fname, dest)
+    print("[NSF-HiFiGAN] vocoder (zip do GitHub release)")
+    _download_and_extract_zip(VOCODER_ZIP_URL, paths.VOCODER_DIR)
 
 
 def setup_diffsinger() -> None:
