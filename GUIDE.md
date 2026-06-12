@@ -92,8 +92,13 @@ python scripts/transcribe.py minha_melodia.wav --name minha_musica --lyrics letr
 # treinar sua voz:
 python scripts/train_voice.py --voice data/voices/meu_nome
 
-# sintetizar:
+# sintetizar (só áudio):
 python -m src.pipeline --song data/songs/minha_musica --voice meu_nome --out out/demo.wav
+
+# (opcional) com avatar visual -> gera out/demo.mp4:
+python scripts/get_face.py --name meu_avatar      # rosto sintético (não-real)
+python -m src.pipeline --song data/songs/minha_musica --voice meu_nome \
+    --avatar-image data/faces/meu_avatar.jpg --out out/demo.wav
 
 # ou a interface gráfica:
 python app/gradio_app.py
@@ -107,8 +112,9 @@ python app/gradio_app.py
 |---|---|
 | Partitura → fonemas (`src/score`) | Inferência DiffSinger (`src/svs/engine.py`) |
 | Importador/validador de partitura | Treino/conversão RVC (`src/voice/rvc.py`) |
-| AMT: sua voz → MIDI (`scripts/transcribe.py`) | — |
+| AMT: sua voz → MIDI (`scripts/transcribe.py`) | Avatar SadTalker (`src/avatar/`) |
 | Demo, detecção de GPU, mixagem | — |
 
-Lembre-se do escopo (ver `CONSENT.md`): só vozes próprias/consentidas, e a música entra
-como partitura que você tem direito de usar — nunca gravação comercial nem crawler.
+Lembre-se do escopo (ver `CONSENT.md`): só vozes/rostos próprios ou consentidos (ou rosto
+sintético), e a música entra como partitura que você tem direito de usar — nunca gravação
+comercial, crawler, nem deepfake (de voz ou de imagem) de pessoa real.

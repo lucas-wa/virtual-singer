@@ -50,13 +50,17 @@ def do_train(name: str, files: list[str], epochs: int) -> str:
     return f"Modelo '{name}' treinado: {model.weight}"
 
 
-def do_synthesize(song: str, voice: str, instrumental: str | None, transpose: int):
+def do_synthesize(song: str, voice: str, instrumental: str | None, transpose: int,
+                  avatar_image: str | None):
     if not song or not voice:
-        return None, "Escolha uma música e uma voz."
+        return None, None, "Escolha uma música e uma voz."
     out = paths.OUT / f"{voice}_{song}.wav"
-    run_pipeline(paths.SONGS / song, voice, out,
-                 instrumental=instrumental or None, transpose=int(transpose))
-    return str(out), f"Pronto: {out}"
+    result = run_pipeline(paths.SONGS / song, voice, out,
+                          instrumental=instrumental or None, transpose=int(transpose),
+                          avatar_image=avatar_image or None)
+    # com avatar, result é o .mp4; o áudio fica em `out`
+    video = str(result) if str(result).endswith(".mp4") else None
+    return str(out), video, f"Pronto: {result}"
 
 
 def build_ui() -> gr.Blocks:
@@ -84,15 +88,20 @@ def build_ui() -> gr.Blocks:
             refresh = gr.Button("↻ Atualizar listas")
             instrumental = gr.Audio(label="Instrumental p/ mix (opcional)", type="filepath")
             transpose = gr.Slider(-12, 12, value=0, step=1, label="Transpor (semitons)")
+            avatar_image = gr.Image(
+                label="Rosto p/ avatar (opcional — sintético/próprio/consentido)",
+                type="filepath")
             synth_btn = gr.Button("Cantar 🎶", variant="primary")
-            audio_out = gr.Audio(label="Resultado")
+            audio_out = gr.Audio(label="Áudio")
+            video_out = gr.Video(label="Vídeo (avatar)")
             synth_status = gr.Textbox(label="Status")
 
             refresh.click(lambda: (gr.update(choices=list_songs()),
                                    gr.update(choices=list_voices())),
                           outputs=[song, voice])
-            synth_btn.click(do_synthesize, [song, voice, instrumental, transpose],
-                            [audio_out, synth_status])
+            synth_btn.click(do_synthesize,
+                            [song, voice, instrumental, transpose, avatar_image],
+                            [audio_out, video_out, synth_status])
 
     return demo
 

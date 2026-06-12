@@ -40,12 +40,26 @@ VOCODER_CONFIG = ("openvpi/vocoders", "nsf_hifigan_44.1k_hop512_128bin_2024.02/c
 REPOS = [
     ("https://github.com/openvpi/DiffSinger.git", paths.DIFFSINGER_REPO),
     ("https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI.git", paths.RVC_REPO),
+    ("https://github.com/OpenTalker/SadTalker.git", paths.SADTALKER_REPO),
 ]
 
 # Checkpoint acústico do DiffSinger em inglês (modelo da comunidade / OpenUtau).
 # Ajuste o repo_id para o modelo EN que você escolher usar.
 DIFFSINGER_EN = ("AnnaWegmann/diffsinger-en-placeholder", "model.ckpt",
                  paths.DIFFSINGER_DIR / "model.ckpt")
+
+# Checkpoints do SadTalker (avatar). Disponíveis no Hugging Face (vinthony/SadTalker).
+# Os pesos do GFPGAN são baixados automaticamente pelo SadTalker em tempo de execução.
+SADTALKER_FILES = [
+    ("vinthony/SadTalker", "SadTalker_V0.0.2_256.safetensors",
+     paths.SADTALKER_CKPT / "SadTalker_V0.0.2_256.safetensors"),
+    ("vinthony/SadTalker", "SadTalker_V0.0.2_512.safetensors",
+     paths.SADTALKER_CKPT / "SadTalker_V0.0.2_512.safetensors"),
+    ("vinthony/SadTalker", "mapping_00109-model.pth.tar",
+     paths.SADTALKER_CKPT / "mapping_00109-model.pth.tar"),
+    ("vinthony/SadTalker", "mapping_00229-model.pth.tar",
+     paths.SADTALKER_CKPT / "mapping_00229-model.pth.tar"),
+]
 
 
 def _hf_download(repo_id: str, filename: str, dest: Path) -> None:
@@ -93,9 +107,15 @@ def setup_diffsinger() -> None:
 
 
 def setup_repos() -> None:
-    print("[repos] clonando DiffSinger e RVC")
+    print("[repos] clonando DiffSinger, RVC e SadTalker")
     for url, dest in REPOS:
         _clone(url, dest)
+
+
+def setup_avatar() -> None:
+    print("[SadTalker] checkpoints do avatar")
+    for repo, fname, dest in SADTALKER_FILES:
+        _hf_download(repo, fname, dest)
 
 
 COMPONENTS = {
@@ -103,6 +123,7 @@ COMPONENTS = {
     "rvc": setup_rvc,
     "vocoder": setup_vocoder,
     "diffsinger": setup_diffsinger,
+    "avatar": setup_avatar,
 }
 
 

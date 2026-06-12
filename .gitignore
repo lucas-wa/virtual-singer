@@ -10,13 +10,16 @@ checkpoints/
 *.pth
 *.onnx
 
-# Dados de usuário — NUNCA versionar vozes gravadas
+# Dados de usuário — NUNCA versionar vozes gravadas nem rostos
 data/voices/
 !data/voices/.gitkeep
+data/faces/
+!data/faces/.gitkeep
 
 # Saídas geradas
 out/
 *.wav
+*.mp4
 !data/songs/**/*.wav
 
 # Repositórios vendored (DiffSinger / RVC) baixados pelo setup

@@ -3,7 +3,8 @@
 Projeto da disciplina **Processamento de Áudio e Voz** (UFG).
 
 **O que faz:** qualquer pessoa grava alguns minutos da própria voz e o sistema sintetiza
-**essa voz cantando** uma música fornecida como **partitura (melodia + letra)**.
+**essa voz cantando** uma música fornecida como **partitura (melodia + letra)** — e,
+opcionalmente, anima um **avatar (rosto)** cantando o resultado.
 
 ```
  partitura (MIDI/MusicXML + letra)
@@ -19,6 +20,9 @@ Projeto da disciplina **Processamento de Áudio e Voz** (UFG).
         │
         ▼
  [4] mix opcional com instrumental (Demucs) ──►  .wav final
+        │
+        ▼
+ [5] avatar opcional: SadTalker (foto + áudio) ──►  .mp4 (rosto cantando)
 ```
 
 ## Escopo ético e legal (leia antes de usar)
@@ -27,9 +31,11 @@ Este projeto **só** sintetiza vozes de pessoas que consentem — na prática, a
 grava as próprias amostras. Veja [`CONSENT.md`](CONSENT.md).
 
 - ❌ **Não** clona a voz de artistas/pessoas reais sem consentimento (isso é deepfake de voz).
+- ❌ **Não** anima a imagem de pessoa real sem consentimento (isso é deepfake visual).
 - ❌ **Não** baixa nem treina em gravações comerciais protegidas por direitos autorais.
 - ✅ A música entra como **partitura** (melodia + letra), não como gravação master.
 - ✅ O repertório de demonstração usa músicas de **domínio público / licença aberta**.
+- ✅ O avatar usa um rosto **sintético/fictício**, próprio, ou de voluntário que consente.
 
 Para demonstrar com uma música específica, transcreva a melodia e a letra para um arquivo
 MIDI/MusicXML (como em qualquer cover feito em aula) — o sistema é genérico e funciona com
@@ -75,6 +81,7 @@ python scripts/make_demo_song.py     # gera a música de demonstração (domíni
 | Síntese SVS (DiffSinger) | ⏳ requer setup | Python 3.10 + GPU + pesos |
 | Treino/conversão de timbre (RVC) | ⏳ requer setup | Python 3.10 + GPU + pesos |
 | Separação de fontes (Demucs) | ⏳ requer setup | `demucs` instalado |
+| Avatar visual (SadTalker) | ⏳ requer setup | Python 3.10 + GPU + checkpoints |
 
 ## Uso
 
@@ -90,6 +97,11 @@ python scripts/train_voice.py --voice data/voices/meu_nome
 
 # 3. Sintetizar a partitura na sua voz
 python -m src.pipeline --song data/songs/minha_musica --voice meu_nome --out out/demo.wav
+
+# 3b. (opcional) com avatar: rosto cantando o áudio  ->  gera out/demo.mp4
+python scripts/get_face.py --name meu_avatar         # rosto sintético (não-real)
+python -m src.pipeline --song data/songs/minha_musica --voice meu_nome \
+    --avatar-image data/faces/meu_avatar.jpg --out out/demo.wav
 
 # 4. Ou usar a interface gráfica
 python app/gradio_app.py
@@ -108,16 +120,20 @@ catálogos protegidos. Veja [`CONSENT.md`](CONSENT.md).
 | Caminho | Papel |
 |---|---|
 | `src/score/` | parse de MIDI/MusicXML + letra → fonemas alinhados às notas |
+| `src/transcribe/` | AMT: áudio (sua voz/instrumento) → MIDI melódico |
 | `src/svs/` | DiffSinger + NSF-HiFiGAN → voz-guia cantada |
 | `src/voice/` | treino e inferência RVC (timbre do usuário) |
 | `src/separate/` | Demucs (instrumental / limpeza de amostras) |
+| `src/avatar/` | SadTalker (foto + áudio → vídeo de rosto cantando) |
 | `src/pipeline.py` | orquestra a cadeia completa |
 | `app/gradio_app.py` | UI de demonstração |
-| `scripts/` | download de modelos e treino de voz |
+| `scripts/` | download de modelos, transcrição, treino de voz, rosto sintético |
 | `data/songs/` | partituras de demonstração (domínio público) |
 | `data/voices/` | gravações dos usuários (não versionado) |
+| `data/faces/` | rostos do avatar (não versionado) |
 
 ## Créditos / reuso
 
 Construído sobre projetos open-source: **DiffSinger**, **NSF-HiFiGAN**, **RVC**
-(Retrieval-based Voice Conversion), **Demucs**, **music21**, **phonemizer**.
+(Retrieval-based Voice Conversion), **Demucs**, **SadTalker** + **GFPGAN**,
+**music21**, **phonemizer**, **librosa**.

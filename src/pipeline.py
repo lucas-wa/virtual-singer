@@ -1,11 +1,13 @@
 """Orquestra a cadeia completa do cantor virtual.
 
-    partitura  ──►  voz-guia (DiffSinger)  ──►  timbre do usuário (RVC)  ──►  [mix]
+    partitura -> voz-guia (DiffSinger) -> timbre do usuario (RVC) -> [mix] -> [avatar]
 
 Uso:
     python -m src.pipeline --song data/songs/demo --voice meu_nome --out out/demo.wav
     python -m src.pipeline --song data/songs/demo --voice meu_nome \
         --instrumental caminho/instrumental.wav --out out/demo.wav
+    python -m src.pipeline --song data/songs/demo --voice meu_nome \
+        --avatar-image data/faces/meu_avatar.jpg --out out/demo.wav   # gera out/demo.mp4
 """
 from __future__ import annotations
 
@@ -20,7 +22,12 @@ from .voice import VoiceModel, convert
 
 
 def run(song_dir: str | Path, voice_name: str, out_wav: str | Path,
-        instrumental: str | Path | None = None, transpose: int = 0) -> Path:
+        instrumental: str | Path | None = None, transpose: int = 0,
+        avatar_image: str | Path | None = None, avatar_motion: bool = False) -> Path:
+    """Gera o canto e, se `avatar_image` for dado, também o vídeo (mesmo nome, .mp4).
+
+    Retorna o caminho do .mp4 quando há avatar, senão o do .wav.
+    """
     profile = detect_profile()
     out_wav = Path(out_wav)
     out_wav.parent.mkdir(parents=True, exist_ok=True)
@@ -47,8 +54,17 @@ def run(song_dir: str | Path, voice_name: str, out_wav: str | Path,
     else:
         voc, sr = audio.load_wav(converted)
         audio.save_wav(out_wav, voc, sr)
+    print(f"[pipeline] áudio pronto -> {out_wav}")
 
-    print(f"[pipeline] pronto -> {out_wav}")
+    # 5. avatar opcional: foto + áudio -> vídeo
+    if avatar_image:
+        from .avatar import animate  # import tardio: deps pesadas só quando usado
+
+        out_video = out_wav.with_suffix(".mp4")
+        animate(avatar_image, out_wav, out_video, profile=profile, still=not avatar_motion)
+        print(f"[pipeline] vídeo pronto -> {out_video}")
+        return out_video
+
     return out_wav
 
 
@@ -60,8 +76,13 @@ def main() -> None:
     ap.add_argument("--out", default=str(paths.OUT / "output.wav"), help="WAV de saída")
     ap.add_argument("--instrumental", default=None, help="WAV instrumental para a mix (opcional)")
     ap.add_argument("--transpose", type=int, default=0, help="semitons de transposição")
+    ap.add_argument("--avatar-image", default=None,
+                    help="foto do rosto (sintético/próprio/consentido) p/ gerar vídeo cantando")
+    ap.add_argument("--avatar-motion", action="store_true",
+                    help="permitir mais movimento de cabeça (default: estável p/ canto)")
     args = ap.parse_args()
-    run(args.song, args.voice, args.out, args.instrumental, args.transpose)
+    run(args.song, args.voice, args.out, args.instrumental, args.transpose,
+        avatar_image=args.avatar_image, avatar_motion=args.avatar_motion)
 
 
 if __name__ == "__main__":
