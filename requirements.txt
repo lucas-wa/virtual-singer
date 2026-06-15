@@ -28,6 +28,7 @@ tqdm
 pyyaml
 requests
 huggingface_hub          # download de pesos pré-treinados
+remotezip                # baixa só um cantor da VocalSet (scripts/get_sample_voice.py)
 
 # NOTA 1: DiffSinger e RVC são clonados como repositórios (não são pacotes PyPI limpos).
 #         scripts/setup_models.py cuida do download dos pesos; veja README.md.

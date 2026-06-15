@@ -76,6 +76,7 @@ python scripts/make_demo_song.py     # gera a música de demonstração (domíni
 | Front-end de partitura (`src/score`) | ✅ testado | só `pretty_midi`, `music21`, `g2p_en` |
 | Importador/validador (`scripts/import_score.py`) | ✅ testado | idem |
 | Transcrição automática AMT (`src/transcribe`, `scripts/transcribe.py`) | ✅ testado | `librosa` (roda no 3.13) |
+| Voz de teste da VocalSet (`scripts/get_sample_voice.py`) | ✅ testado | `remotezip` |
 | Conversão p/ formato DiffSinger (`src/svs/ds_format`) | ✅ testado | nada extra |
 | Detecção de hardware / mixagem / E/S | ✅ testado | `torch` (detecção), `soundfile` (E/S) |
 | Síntese SVS (DiffSinger) | ⏳ requer setup | Python 3.10 + GPU + pesos |
@@ -92,7 +93,12 @@ python scripts/import_score.py minha_musica.musicxml --name minha_musica
 #    b) transcrever automaticamente a partir de VOCÊ cantando/tocando a melodia
 python scripts/transcribe.py minha_melodia.wav --name minha_musica --lyrics letra.txt
 
-# 2. Treinar o modelo de voz a partir das suas gravações (>= 5 min em data/voices/<nome>/)
+# 2. Escolher a voz (alterne livremente — cada voz é uma pasta em data/voices/<nome>/):
+#    (a) voz pronta da VocalSet (CC BY 4.0), para testar sem gravar:
+python scripts/get_sample_voice.py --list                 # ver cantores
+python scripts/get_sample_voice.py --singer female1       # baixa só esse cantor
+python scripts/train_voice.py --voice data/voices/vocalset_female1
+#    (b) ou a sua própria voz (>= 5 min em data/voices/<nome>/):
 python scripts/train_voice.py --voice data/voices/meu_nome
 
 # 3. Sintetizar a partitura na sua voz
@@ -127,6 +133,7 @@ catálogos protegidos. Veja [`CONSENT.md`](CONSENT.md).
 | `src/avatar/` | SadTalker (foto + áudio → vídeo de rosto cantando) |
 | `src/pipeline.py` | orquestra a cadeia completa |
 | `app/gradio_app.py` | UI de demonstração |
+| `scripts/get_sample_voice.py` | baixa uma voz pronta da VocalSet (CC BY 4.0) para testar |
 | `scripts/` | download de modelos, transcrição, treino de voz, rosto sintético |
 | `data/songs/` | partituras de demonstração (domínio público) |
 | `data/voices/` | gravações dos usuários (não versionado) |

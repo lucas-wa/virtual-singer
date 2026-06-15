@@ -96,10 +96,14 @@ python scripts/make_demo_song.py
 # (opcional) transcrever sua voz numa partitura:
 python scripts/transcribe.py minha_melodia.wav --name minha_musica --lyrics letra.txt
 
-# treinar sua voz:
+# escolher a voz (alterne quando quiser trocando o --voice):
+#   (a) voz pronta da VocalSet (testar sem gravar):
+python scripts/get_sample_voice.py --singer female1
+python scripts/train_voice.py --voice data/voices/vocalset_female1
+#   (b) ou a sua voz (>= 5 min em data/voices/meu_nome/):
 python scripts/train_voice.py --voice data/voices/meu_nome
 
-# sintetizar (só áudio):
+# sintetizar (só áudio) — escolha a voz no --voice:
 python -m src.pipeline --song data/songs/minha_musica --voice meu_nome --out out/demo.wav
 
 # (opcional) com avatar visual -> gera out/demo.mp4:
