@@ -135,6 +135,8 @@ catálogos protegidos. Veja [`CONSENT.md`](CONSENT.md).
 | `src/pipeline.py` | orquestra a cadeia completa |
 | `app/gradio_app.py` | UI de demonstração |
 | `scripts/get_sample_voice.py` | baixa uma voz pronta da VocalSet (CC BY 4.0) para testar |
+| `scripts/run_all.sh` | runner headless ponta a ponta (voz → treino RVC → síntese → avatar) |
+| `slurm/` | job SLURM (H100/Singularity) + `.env.example` para rodar no cluster |
 | `scripts/` | download de modelos, transcrição, treino de voz, rosto sintético |
 | `data/songs/` | partituras de demonstração (domínio público) |
 | `data/voices/` | gravações dos usuários (não versionado) |

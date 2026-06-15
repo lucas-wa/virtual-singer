@@ -117,6 +117,32 @@ python app/gradio_app.py
 
 ---
 
+## Opção C — Cluster SLURM (H100 + Singularity) — recomendada para o pipeline completo
+
+Tem acesso a uma H100 via SLURM? É o melhor ambiente: **sem a proibição de deepfake do
+Colab** (o avatar roda aqui), Python sob seu controle e GPU sobrando.
+
+1. **Imagem do container** (uma vez) — PyTorch + CUDA 12 + **Python 3.10** (fairseq exige 3.10):
+   ```bash
+   singularity pull /raid/user_lucasalves/images/pytorch_2.2_cu121_py310.sif \
+       docker://pytorch/pytorch:2.2.2-cuda12.1-cudnn8-runtime
+   ```
+2. **Coloque o repositório** em `$HOST_RAID/$PROJECT_SUBDIR` (ex.: `/raid/user_lucasalves/virtual-singer`).
+3. (Opcional) `cp slurm/.env.example slurm/.env` e preencha o `HF_TOKEN`.
+4. **Edite os parâmetros** no bloco do `slurm/run_virtual_singer.sbatch` (SONG, VOICE_NAME,
+   VOICE_SOURCE, ENGINE, AVATAR_IMAGE) e submeta:
+   ```bash
+   sbatch slurm/run_virtual_singer.sbatch
+   ```
+
+O job: instala deps (+fairseq), baixa modelos (conforme ENGINE/AVATAR), e roda
+`scripts/run_all.sh` ponta a ponta: voz pronta (VocalSet) → treino RVC → síntese →
+[avatar]. Saída em `out/`. Logs em `logs/vsinger_<jobid>.out`.
+
+> Para o avatar no cluster, defina `AVATAR_IMAGE=synthetic` (ou um caminho) no `.sbatch` —
+> o `setup_models.py` é chamado com `--with-avatar` automaticamente. Para a síntese de maior
+> qualidade, `ENGINE=diffsinger` (chama `--with-diffsinger`; ainda precisa de voicebank EN).
+
 ## O que já está garantido vs. o que ainda iteramos
 
 | Funciona hoje (Colab ou local) | Precisa de ajuste fino |

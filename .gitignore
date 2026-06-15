@@ -25,6 +25,10 @@ out/
 # Repositórios vendored (DiffSinger / RVC) baixados pelo setup
 third_party/
 
+# SLURM / segredos
+slurm/.env
+logs/
+
 # Sistema
 .DS_Store
 Thumbs.db
