@@ -13,7 +13,7 @@ opcionalmente, anima um **avatar (rosto)** cantando o resultado.
  [1] front-end de partitura  ──►  fonemas + notas + durações
         │
         ▼
- [2] DiffSinger + NSF-HiFiGAN ──►  voz-guia cantada (timbre base)
+ [2] voz-guia cantada (DSP embutido, padrão; DiffSinger opcional p/ +qualidade)
         │
         ▼
  [3] RVC v2 (treinado na sua voz) ──►  a MESMA performance no SEU timbre
@@ -77,9 +77,10 @@ python scripts/make_demo_song.py     # gera a música de demonstração (domíni
 | Importador/validador (`scripts/import_score.py`) | ✅ testado | idem |
 | Transcrição automática AMT (`src/transcribe`, `scripts/transcribe.py`) | ✅ testado | `librosa` (roda no 3.13) |
 | Voz de teste da VocalSet (`scripts/get_sample_voice.py`) | ✅ testado | `remotezip` |
+| **Voz-guia DSP embutida (`src/svs/dsp_guide.py`, motor padrão)** | ✅ testado | só `numpy`/`soundfile` |
 | Conversão p/ formato DiffSinger (`src/svs/ds_format`) | ✅ testado | nada extra |
 | Detecção de hardware / mixagem / E/S | ✅ testado | `torch` (detecção), `soundfile` (E/S) |
-| Síntese SVS (DiffSinger) | ⏳ requer setup | Python 3.10 + GPU + pesos |
+| Síntese SVS DiffSinger (motor opcional `--engine diffsinger`) | ⏳ requer setup | Python 3.10 + GPU + voicebank EN |
 | Treino/conversão de timbre (RVC) | ⏳ requer setup | Python 3.10 + GPU + pesos |
 | Separação de fontes (Demucs) | ⏳ requer setup | `demucs` instalado |
 | Avatar visual (SadTalker) | ⏳ requer setup | Python 3.10 + GPU + checkpoints |

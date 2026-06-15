@@ -121,10 +121,10 @@ python app/gradio_app.py
 
 | Funciona hoje (Colab ou local) | Precisa de ajuste fino |
 |---|---|
-| Partitura → fonemas (`src/score`) | Inferência DiffSinger (`src/svs/engine.py`) |
-| Importador/validador de partitura | Treino/conversão RVC (`src/voice/rvc.py`) |
-| AMT: sua voz → MIDI (`scripts/transcribe.py`) | Avatar SadTalker (`src/avatar/`) |
-| Demo, detecção de GPU, mixagem | — |
+| Partitura → fonemas (`src/score`) | Treino/conversão RVC na GPU (`src/voice/rvc.py`) |
+| **Voz-guia DSP embutida (`src/svs/dsp_guide.py`)** | Inferência DiffSinger opcional (`src/svs/engine.py`) |
+| Importador/validador + AMT (sua voz → MIDI) | Avatar SadTalker — só fora do Colab grátis |
+| Voz de teste VocalSet, demo, detecção de GPU, mixagem | — |
 
 Lembre-se do escopo (ver `CONSENT.md`): só vozes/rostos próprios ou consentidos (ou rosto
 sintético), e a música entra como partitura que você tem direito de usar — nunca gravação

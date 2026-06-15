@@ -17,16 +17,19 @@ from pathlib import Path
 from . import audio, paths
 from .hardware import detect_profile
 from .score import build_performance
-from .svs import synthesize
+from .svs import synthesize, synthesize_dsp
 from .voice import VoiceModel, convert
 
 
 def run(song_dir: str | Path, voice_name: str, out_wav: str | Path,
         instrumental: str | Path | None = None, transpose: int = 0,
-        avatar_image: str | Path | None = None, avatar_motion: bool = False) -> Path:
+        avatar_image: str | Path | None = None, avatar_motion: bool = False,
+        engine: str = "dsp") -> Path:
     """Gera o canto e, se `avatar_image` for dado, também o vídeo (mesmo nome, .mp4).
 
-    Retorna o caminho do .mp4 quando há avatar, senão o do .wav.
+    engine: "dsp" (sintetizador embutido, padrão — sempre roda) ou "diffsinger"
+    (qualidade maior, precisa de voicebank EN + GPU). Retorna .mp4 se houver avatar,
+    senão o .wav.
     """
     profile = detect_profile()
     out_wav = Path(out_wav)
@@ -34,11 +37,14 @@ def run(song_dir: str | Path, voice_name: str, out_wav: str | Path,
 
     # 1. partitura -> performance (fonemas alinhados)
     perf = build_performance(song_dir)
-    print(f"[pipeline] {perf.summary()}")
+    print(f"[pipeline] {perf.summary()} | motor de voz-guia: {engine}")
 
     # 2. performance -> voz-guia cantada
     guide = out_wav.parent / "_guide.wav"
-    synthesize(perf, guide, profile)
+    if engine == "diffsinger":
+        synthesize(perf, guide, profile)
+    else:
+        synthesize_dsp(perf, guide)
 
     # 3. voz-guia -> timbre do usuário
     model = VoiceModel.for_name(voice_name)
@@ -76,13 +82,15 @@ def main() -> None:
     ap.add_argument("--out", default=str(paths.OUT / "output.wav"), help="WAV de saída")
     ap.add_argument("--instrumental", default=None, help="WAV instrumental para a mix (opcional)")
     ap.add_argument("--transpose", type=int, default=0, help="semitons de transposição")
+    ap.add_argument("--engine", choices=["dsp", "diffsinger"], default="dsp",
+                    help="motor da voz-guia: dsp (padrão, sempre roda) ou diffsinger (GPU+voicebank)")
     ap.add_argument("--avatar-image", default=None,
                     help="foto do rosto (sintético/próprio/consentido) p/ gerar vídeo cantando")
     ap.add_argument("--avatar-motion", action="store_true",
                     help="permitir mais movimento de cabeça (default: estável p/ canto)")
     args = ap.parse_args()
     run(args.song, args.voice, args.out, args.instrumental, args.transpose,
-        avatar_image=args.avatar_image, avatar_motion=args.avatar_motion)
+        avatar_image=args.avatar_image, avatar_motion=args.avatar_motion, engine=args.engine)
 
 
 if __name__ == "__main__":

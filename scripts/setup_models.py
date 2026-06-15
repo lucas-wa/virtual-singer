@@ -149,13 +149,18 @@ COMPONENTS = {
     "diffsinger": setup_diffsinger,
     "avatar": setup_avatar,
 }
-# Componentes de áudio (seguros no Colab grátis). "avatar" fica de fora por padrão.
-AUDIO_COMPONENTS = ["repos", "rvc", "vocoder", "diffsinger"]
+# Componentes do caminho PADRÃO (motor de voz-guia = DSP embutido): só RVC.
+# DiffSinger/NSF-HiFiGAN só são necessários para o motor "diffsinger" (opt-in), e o
+# avatar (SadTalker) é proibido no Colab grátis — ambos ficam de fora por padrão.
+AUDIO_COMPONENTS = ["repos", "rvc"]
 
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--only", choices=list(COMPONENTS), help="baixar apenas um componente")
+    ap.add_argument("--with-diffsinger", action="store_true",
+                    help="incluir vocoder + checkpoint DiffSinger EN (motor de maior "
+                         "qualidade; precisa de voicebank EN e GPU). Padrão usa o motor DSP.")
     ap.add_argument("--with-avatar", action="store_true",
                     help="incluir o SadTalker (avatar). NÃO use no Colab grátis — "
                          "ele proíbe face-animation e encerra a sessão. Rode local/host permitido.")
@@ -166,14 +171,17 @@ def main() -> None:
         targets = [args.only]
     else:
         targets = list(AUDIO_COMPONENTS)
+        if args.with_diffsinger:
+            targets += ["vocoder", "diffsinger"]
         if args.with_avatar:
             targets.append("avatar")
     for name in targets:
         COMPONENTS[name]()
-    print("\nConcluído. Verifique avisos acima para downloads que precisem de ação manual.")
-    if not args.with_avatar and "avatar" not in targets:
-        print("Avatar (SadTalker) NÃO baixado. Para o vídeo, rode com --with-avatar "
-              "FORA do Colab grátis (local ou host permitido).")
+    print("\nConcluído. O motor PADRÃO (DSP) já funciona só com o RVC baixado.")
+    if "diffsinger" not in targets:
+        print("DiffSinger NÃO baixado (motor opcional). Use --with-diffsinger se quiser tentá-lo.")
+    if "avatar" not in targets:
+        print("Avatar (SadTalker) NÃO baixado. Rode com --with-avatar FORA do Colab grátis.")
 
 
 if __name__ == "__main__":
