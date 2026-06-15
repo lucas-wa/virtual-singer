@@ -10,8 +10,9 @@ baixamos os checkpoints do Hugging Face Hub. Os IDs abaixo podem ser ajustados s
 preferir outra fonte/versão.
 
 Uso:
-    python scripts/setup_models.py            # baixa tudo
-    python scripts/setup_models.py --only rvc # baixa só um componente
+    python scripts/setup_models.py             # só ÁUDIO (seguro no Colab grátis)
+    python scripts/setup_models.py --with-avatar  # inclui SadTalker (NÃO no Colab grátis)
+    python scripts/setup_models.py --only rvc  # baixa só um componente
 """
 from __future__ import annotations
 
@@ -36,11 +37,15 @@ VOCODER_ZIP_URL = ("https://github.com/openvpi/vocoders/releases/download/"
                    "nsf_hifigan_44.1k_hop512_128bin_2024.02.zip")
 
 # Repositórios para clonar
+# Repos de ÁUDIO (permitidos no Colab grátis). O SadTalker (avatar) NÃO entra aqui de
+# propósito: o Colab grátis proíbe ferramentas de animação facial/deepfake e encerra a
+# sessão ao clonar/rodar o SadTalker. Ele só é baixado pelo componente "avatar" (opt-in),
+# que deve rodar localmente ou num host que permita (ver GUIDE.md).
 REPOS = [
     ("https://github.com/openvpi/DiffSinger.git", paths.DIFFSINGER_REPO),
     ("https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI.git", paths.RVC_REPO),
-    ("https://github.com/OpenTalker/SadTalker.git", paths.SADTALKER_REPO),
 ]
+SADTALKER_REPO_URL = "https://github.com/OpenTalker/SadTalker.git"
 
 # Checkpoint acústico do DiffSinger em inglês (modelo da comunidade / OpenUtau).
 # Ajuste o repo_id para o modelo EN que você escolher usar.
@@ -124,13 +129,15 @@ def setup_diffsinger() -> None:
 
 
 def setup_repos() -> None:
-    print("[repos] clonando DiffSinger, RVC e SadTalker")
+    print("[repos] clonando DiffSinger e RVC (áudio)")
     for url, dest in REPOS:
         _clone(url, dest)
 
 
 def setup_avatar() -> None:
-    print("[SadTalker] checkpoints do avatar")
+    print("[SadTalker] AVISO: NÃO rode isto no Colab grátis (proíbe face-animation).")
+    print("[SadTalker] clonando repo + checkpoints do avatar")
+    _clone(SADTALKER_REPO_URL, paths.SADTALKER_REPO)
     for repo, fname, dest in SADTALKER_FILES:
         _hf_download(repo, fname, dest)
 
@@ -142,18 +149,31 @@ COMPONENTS = {
     "diffsinger": setup_diffsinger,
     "avatar": setup_avatar,
 }
+# Componentes de áudio (seguros no Colab grátis). "avatar" fica de fora por padrão.
+AUDIO_COMPONENTS = ["repos", "rvc", "vocoder", "diffsinger"]
 
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--only", choices=list(COMPONENTS), help="baixar apenas um componente")
+    ap.add_argument("--with-avatar", action="store_true",
+                    help="incluir o SadTalker (avatar). NÃO use no Colab grátis — "
+                         "ele proíbe face-animation e encerra a sessão. Rode local/host permitido.")
     args = ap.parse_args()
 
     paths.ensure_dirs()
-    targets = [args.only] if args.only else list(COMPONENTS)
+    if args.only:
+        targets = [args.only]
+    else:
+        targets = list(AUDIO_COMPONENTS)
+        if args.with_avatar:
+            targets.append("avatar")
     for name in targets:
         COMPONENTS[name]()
     print("\nConcluído. Verifique avisos acima para downloads que precisem de ação manual.")
+    if not args.with_avatar and "avatar" not in targets:
+        print("Avatar (SadTalker) NÃO baixado. Para o vídeo, rode com --with-avatar "
+              "FORA do Colab grátis (local ou host permitido).")
 
 
 if __name__ == "__main__":

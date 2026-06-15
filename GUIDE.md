@@ -35,10 +35,17 @@ O notebook está dividido em blocos:
 2. **Obter o projeto** — clona/descompacta/monta (conforme 2a/2b/2c).
 3. **Instalar deps leves + demo** — roda partitura, AMT e gera a música de teste.
    ✅ *Isto já funciona e prova o pipeline ponta a ponta (sem voz ainda).*
-4. **Instalar PyTorch + clonar DiffSinger/RVC + baixar pesos** — prepara os motores.
+4. **Instalar PyTorch + clonar DiffSinger/RVC + baixar pesos** — prepara os motores de ÁUDIO.
 5. **Treinar a sua voz (RVC)** — você sobe ~5 min da sua voz.
 6. **Sintetizar** — gera a sua voz cantando a partitura.
+7. **Avatar** — ⛔ **NÃO roda no Colab grátis** (ver abaixo). Esta seção é só referência
+   para você rodar localmente / em host permitido.
 
+> ⛔ **Restrição do Colab grátis:** o Google **proíbe** ferramentas de animação facial/
+> deepfake (SadTalker) e **encerra a sessão** se você as clonar/rodar. Por isso o avatar
+> ficou FORA das células de áudio e o `setup_models.py` **não** baixa o SadTalker por padrão
+> (use `--with-avatar` só fora do Colab grátis). O áudio (DiffSinger/RVC) é permitido.
+>
 > As células 4–6 são as que ajustamos juntos: dependendo das versões do RVC/DiffSinger
 > que o Colab baixar, os comandos em `src/svs/engine.py` e `src/voice/rvc.py` podem
 > precisar de pequenos ajustes de flags. Rode e me mande o erro que aparecer.
