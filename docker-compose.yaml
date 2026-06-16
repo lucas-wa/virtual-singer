@@ -1,0 +1,21 @@
+services:
+  singer:
+    build: .
+    container_name: singer
+    env_file:
+      - .env
+    environment:
+      HF_HOME: /cache/huggingface
+      HF_HUB_CACHE: /cache/huggingface/hub
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: ["1"]
+              capabilities: [gpu]
+    stdin_open: true
+    tty: true
+    volumes:
+      - .:/workspace
+      - ./.cache/huggingface:/cache/huggingface

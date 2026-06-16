@@ -3,12 +3,18 @@
 __pycache__/
 *.pyc
 
+# Cache
+.cache/
+
 # Modelos pré-treinados (grandes, baixados via setup_models.py)
 models/
 checkpoints/
 *.ckpt
 *.pth
 *.onnx
+
+# Repositórios vendored (DiffSinger / RVC) baixados pelo setup
+third_party/
 
 # Dados de usuário — NUNCA versionar vozes gravadas nem rostos
 data/voices/
@@ -22,10 +28,8 @@ out/
 *.mp4
 !data/songs/**/*.wav
 
-# Repositórios vendored (DiffSinger / RVC) baixados pelo setup
-third_party/
-
 # SLURM / segredos
+.env
 slurm/.env
 logs/
 
