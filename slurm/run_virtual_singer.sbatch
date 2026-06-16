@@ -22,7 +22,7 @@
 # Rode:  sbatch slurm/run_virtual_singer.sbatch
 # ============================================================================
 
-CONTAINER_IMAGE="${CONTAINER_IMAGE:-/raid/user_lucasalves/images/pytorch_2.2_cu121_py310.sif}"
+CONTAINER_IMAGE="${CONTAINER_IMAGE:-/raid/user_lucasalves/images/vllm-openai_nightly-2e36cdbe2b4bff4370a02105fdfbdd015d6ec4e8.sif}"
 HOST_RAID="${HOST_RAID:-/raid/user_lucasalves}"
 PROJECT_SUBDIR="${PROJECT_SUBDIR:-virtual-singer}"
 
