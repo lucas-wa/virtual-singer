@@ -24,7 +24,7 @@
 
 CONTAINER_IMAGE="${CONTAINER_IMAGE:-/raid/user_lucasalves/images/vllm-openai_nightly-2e36cdbe2b4bff4370a02105fdfbdd015d6ec4e8.sif}"
 HOST_RAID="${HOST_RAID:-/raid/user_lucasalves}"
-PROJECT_SUBDIR="${PROJECT_SUBDIR:-virtual-singer}"
+PROJECT_SUBDIR="${PROJECT_SUBDIR:-ufg/pav/virtual-singer}"
 
 mkdir -p logs
 
