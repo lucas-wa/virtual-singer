@@ -18,7 +18,7 @@ from . import audio, paths
 from .hardware import detect_profile
 from .score import build_performance
 from .svs import synthesize, synthesize_dsp
-from .voice import VoiceModel, convert
+from .voice import convert, resolve_reference
 
 
 def run(song_dir: str | Path, voice_name: str, out_wav: str | Path,
@@ -46,10 +46,11 @@ def run(song_dir: str | Path, voice_name: str, out_wav: str | Path,
     else:
         synthesize_dsp(perf, guide)
 
-    # 3. voz-guia -> timbre do usuário
-    model = VoiceModel.for_name(voice_name)
+    # 3. voz-guia -> timbre da voz de referência (Seed-VC zero-shot, sem treino)
+    reference = resolve_reference(voice_name)
+    print(f"[pipeline] referência de timbre: {reference}")
     converted = out_wav.parent / "_converted.wav"
-    convert(guide, model, converted, transpose=transpose, profile=profile)
+    convert(guide, reference, converted, profile=profile, semitone_shift=transpose)
 
     # 4. mix opcional com instrumental
     if instrumental:
@@ -78,7 +79,8 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--song", required=True, help="pasta da música (MIDI/MusicXML + letra)")
-    ap.add_argument("--voice", required=True, help="nome do modelo de voz treinado")
+    ap.add_argument("--voice", required=True,
+                    help="voz de referência: nome em data/voices/<nome>/ ou caminho de um áudio")
     ap.add_argument("--out", default=str(paths.OUT / "output.wav"), help="WAV de saída")
     ap.add_argument("--instrumental", default=None, help="WAV instrumental para a mix (opcional)")
     ap.add_argument("--transpose", type=int, default=0, help="semitons de transposição")

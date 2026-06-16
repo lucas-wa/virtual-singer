@@ -19,6 +19,7 @@ SADTALKER_CKPT = MODELS / "sadtalker"   # checkpoints do SadTalker
 THIRD_PARTY = ROOT / "third_party"
 DIFFSINGER_REPO = THIRD_PARTY / "DiffSinger"
 RVC_REPO = THIRD_PARTY / "rvc"
+SEEDVC_REPO = THIRD_PARTY / "seed-vc"       # conversão de timbre zero-shot (padrão)
 SADTALKER_REPO = THIRD_PARTY / "SadTalker"
 
 OUT = ROOT / "out"

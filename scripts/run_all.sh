@@ -48,12 +48,8 @@ case "$VOICE_SOURCE" in
         echo "VOICE_SOURCE inválido: $VOICE_SOURCE" >&2; exit 1 ;;
 esac
 
-# ---- 4. treinar o RVC (pula se já houver modelo) ----------------------------
-if [ -f "models/voices/$VOICE_NAME/model.pth" ]; then
-    echo "[rvc] modelo '$VOICE_NAME' já existe — pulando treino"
-else
-    python3 scripts/train_voice.py --voice "data/voices/$VOICE_NAME" --name "$VOICE_NAME" --epochs "$EPOCHS"
-fi
+# ---- 4. (sem treino) — Seed-VC é zero-shot: usa os clipes de referência direto ----
+echo "[seed-vc] timbre zero-shot — sem etapa de treino; referência em data/voices/$VOICE_NAME"
 
 # ---- 5. avatar opcional -----------------------------------------------------
 AVATAR_ARGS=()

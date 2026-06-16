@@ -96,12 +96,10 @@ python scripts/make_demo_song.py
 # (opcional) transcrever sua voz numa partitura:
 python scripts/transcribe.py minha_melodia.wav --name minha_musica --lyrics letra.txt
 
-# escolher a voz (alterne quando quiser trocando o --voice):
+# escolher a voz de referência (Seed-VC é ZERO-SHOT: sem treino! alterne trocando --voice):
 #   (a) voz pronta da VocalSet (testar sem gravar):
 python scripts/get_sample_voice.py --singer female1
-python scripts/train_voice.py --voice data/voices/vocalset_female1
-#   (b) ou a sua voz (>= 5 min em data/voices/meu_nome/):
-python scripts/train_voice.py --voice data/voices/meu_nome
+#   (b) ou a sua voz: alguns segundos de áudio em data/voices/meu_nome/
 
 # sintetizar (só áudio) — escolha a voz no --voice:
 python -m src.pipeline --song data/songs/minha_musica --voice meu_nome --out out/demo.wav
@@ -145,12 +143,12 @@ O job: instala deps (+fairseq), baixa modelos (conforme ENGINE/AVATAR), e roda
 
 ## O que já está garantido vs. o que ainda iteramos
 
-| Funciona hoje (Colab ou local) | Precisa de ajuste fino |
+| Funciona hoje (Colab ou local) | Precisa de GPU / ajuste fino |
 |---|---|
-| Partitura → fonemas (`src/score`) | Treino/conversão RVC na GPU (`src/voice/rvc.py`) |
+| Partitura → fonemas (`src/score`) + AMT | Conversão de timbre **Seed-VC** na GPU (`src/voice/seedvc.py`) |
 | **Voz-guia DSP embutida (`src/svs/dsp_guide.py`)** | Inferência DiffSinger opcional (`src/svs/engine.py`) |
-| Importador/validador + AMT (sua voz → MIDI) | Avatar SadTalker — só fora do Colab grátis |
-| Voz de teste VocalSet, demo, detecção de GPU, mixagem | — |
+| Importador/validador de partitura | RVC por treino — opcional (`src/voice/rvc.py`) |
+| Voz de teste VocalSet, demo, detecção de GPU, mixagem | Avatar SadTalker — só fora do Colab grátis |
 
 Lembre-se do escopo (ver `CONSENT.md`): só vozes/rostos próprios ou consentidos (ou rosto
 sintético), e a música entra como partitura que você tem direito de usar — nunca gravação

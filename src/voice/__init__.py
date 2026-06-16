@@ -1,6 +1,10 @@
-"""Personalização de timbre via RVC: treina na voz do usuário e converte a voz-guia."""
+"""Conversão de timbre.
+
+PADRÃO: Seed-VC (zero-shot, sem treino) — `convert` + `resolve_reference`.
+OPCIONAL: RVC (treino por voz) — importe `from src.voice.rvc import train_voice, convert`.
+"""
 from __future__ import annotations
 
-from .rvc import train_voice, convert, VoiceModel
+from .seedvc import convert, resolve_reference
 
-__all__ = ["train_voice", "convert", "VoiceModel"]
+__all__ = ["convert", "resolve_reference"]

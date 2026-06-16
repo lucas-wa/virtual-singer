@@ -32,11 +32,13 @@ echo "=== Job $SLURM_JOB_ID em $(hostname) | $(date) ==="
 echo "Container: $CONTAINER_IMAGE"
 echo "Projeto:   $HOST_RAID/$PROJECT_SUBDIR"
 
-# Carrega slurm/.env se existir (HF_TOKEN é opcional; nunca commitar esse arquivo)
-ENV_FILE="$(dirname "$0")/.env"
+# Carrega slurm/.env se existir (nunca commitar esse arquivo).
+# No SLURM, $0 pode ser uma cópia no spool — preferimos $SLURM_SUBMIT_DIR.
+ENV_FILE="${SLURM_SUBMIT_DIR:-$(dirname "$0")/..}/slurm/.env"
+[ -f "$ENV_FILE" ] || ENV_FILE="$(dirname "$0")/.env"
 if [ -f "$ENV_FILE" ]; then
     echo "Carregando $ENV_FILE"
-    set -a; source "$ENV_FILE"; set +a
+    set -a; source "$ENV_FILE"; set +a   # set -a => toda variável do .env é exportada
 fi
 
 srun singularity exec \
@@ -62,29 +64,31 @@ srun singularity exec \
         cd "/work/'"$PROJECT_SUBDIR"'"
         git pull --ff-only 2>/dev/null || true
 
-        # ---------------- PARÂMETROS DO EXPERIMENTO (edite à vontade) -----------
-        export SONG=demo                       # pasta em data/songs/
-        export VOICE_NAME=vocalset_female1
-        export VOICE_SOURCE=vocalset:female1   # vocalset:<singer> | path:<dir> | existing
-        export ENGINE=dsp                      # dsp (sempre roda) | diffsinger
-        export EPOCHS=100
-        export AVATAR_IMAGE=                    # vazio=sem vídeo | "synthetic" | caminho de imagem
-        export OUT=out/${VOICE_NAME}_${SONG}.wav
-        # ------------------------------------------------------------------------
+        # ---- PARÂMETROS DO EXPERIMENTO (defina no slurm/.env; defaults abaixo) ----
+        # Vêm do .env (sourced no shell externo e propagado pelo Singularity).
+        export SONG="${SONG:-demo}"                          # pasta em data/songs/
+        export VOICE_NAME="${VOICE_NAME:-vocalset_female1}"
+        export VOICE_SOURCE="${VOICE_SOURCE:-vocalset:female1}"  # vocalset:<singer> | path:<dir> | existing
+        export ENGINE="${ENGINE:-dsp}"                       # dsp (sempre roda) | diffsinger
+        export AVATAR_IMAGE="${AVATAR_IMAGE:-}"              # vazio | "synthetic" | caminho de imagem
+        export OUT="${OUT:-out/${VOICE_NAME}_${SONG}.wav}"
+        # --------------------------------------------------------------------------
 
-        # Dependências: o container já traz torch+CUDA (não reinstalar). fairseq exige
-        # pip<24.1 (metadata do omegaconf<2.1). faiss/fairseq só p/ o RVC.
-        python3 -m pip install --quiet "pip<24.1"
+        # Dependências: o container já traz torch+CUDA (não reinstalar).
+        # PADRÃO usa Seed-VC (timbre zero-shot, SEM fairseq) -> roda em Python 3.12.
         python3 -m pip install --quiet -r requirements.txt
-        python3 -m pip install --quiet fairseq==0.12.2 faiss-cpu
 
-        # Baixa modelos conforme o experimento (avatar permitido aqui — não é Colab).
+        # Baixa o que o experimento precisa (avatar permitido aqui — não é Colab).
         SETUP_FLAGS=""
         [ "$ENGINE" = "diffsinger" ] && SETUP_FLAGS="$SETUP_FLAGS --with-diffsinger"
         [ -n "$AVATAR_IMAGE" ]       && SETUP_FLAGS="$SETUP_FLAGS --with-avatar"
         python3 scripts/setup_models.py $SETUP_FLAGS
 
-        # Pipeline ponta a ponta (treino RVC + síntese + avatar opcional).
+        # Instala as deps do Seed-VC (do próprio repo clonado).
+        [ -f third_party/seed-vc/requirements.txt ] && \
+            python3 -m pip install --quiet -r third_party/seed-vc/requirements.txt
+
+        # Pipeline ponta a ponta: voz-guia (DSP) -> timbre (Seed-VC) -> [avatar].
         bash scripts/run_all.sh
     '
 

@@ -10,9 +10,11 @@ baixamos os checkpoints do Hugging Face Hub. Os IDs abaixo podem ser ajustados s
 preferir outra fonte/versão.
 
 Uso:
-    python scripts/setup_models.py             # só ÁUDIO (seguro no Colab grátis)
-    python scripts/setup_models.py --with-avatar  # inclui SadTalker (NÃO no Colab grátis)
-    python scripts/setup_models.py --only rvc  # baixa só um componente
+    python scripts/setup_models.py               # PADRÃO: Seed-VC (timbre zero-shot)
+    python scripts/setup_models.py --with-rvc    # inclui RVC (treino por voz; py3.10)
+    python scripts/setup_models.py --with-diffsinger  # inclui SVS DiffSinger (maior qualidade)
+    python scripts/setup_models.py --with-avatar # inclui SadTalker (NÃO no Colab grátis)
+    python scripts/setup_models.py --only seedvc # baixa só um componente
 """
 from __future__ import annotations
 
@@ -37,14 +39,12 @@ VOCODER_ZIP_URL = ("https://github.com/openvpi/vocoders/releases/download/"
                    "nsf_hifigan_44.1k_hop512_128bin_2024.02.zip")
 
 # Repositórios para clonar
-# Repos de ÁUDIO (permitidos no Colab grátis). O SadTalker (avatar) NÃO entra aqui de
-# propósito: o Colab grátis proíbe ferramentas de animação facial/deepfake e encerra a
-# sessão ao clonar/rodar o SadTalker. Ele só é baixado pelo componente "avatar" (opt-in),
-# que deve rodar localmente ou num host que permita (ver GUIDE.md).
-REPOS = [
-    ("https://github.com/openvpi/DiffSinger.git", paths.DIFFSINGER_REPO),
-    ("https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI.git", paths.RVC_REPO),
-]
+# Repo PADRÃO de conversão de timbre: Seed-VC (zero-shot, sem treino, sem fairseq).
+SEEDVC_REPO_URL = "https://github.com/Plachtaa/seed-vc.git"
+# Repos OPCIONAIS (motores avançados). RVC = timbre por treino; DiffSinger = SVS de maior
+# qualidade. SadTalker (avatar) é proibido no Colab grátis (face-animation), opt-in.
+RVC_REPO_URL = "https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI.git"
+DIFFSINGER_REPO_URL = "https://github.com/openvpi/DiffSinger.git"
 SADTALKER_REPO_URL = "https://github.com/OpenTalker/SadTalker.git"
 
 # Checkpoint acústico do DiffSinger em inglês (modelo da comunidade / OpenUtau).
@@ -112,8 +112,15 @@ def _clone(url: str, dest: Path) -> None:
         print(f"    ! clone falhou ({e}). Clone manualmente em {dest}")
 
 
+def setup_seedvc() -> None:
+    print("[Seed-VC] clonando repo (conversão de timbre zero-shot — padrão)")
+    _clone(SEEDVC_REPO_URL, paths.SEEDVC_REPO)
+    print("[Seed-VC] checkpoints baixam sozinhos na 1ª inferência")
+
+
 def setup_rvc() -> None:
-    print("[RVC] features base + extrator de F0")
+    print("[RVC] repo + features base (opcional, treino por voz)")
+    _clone(RVC_REPO_URL, paths.RVC_REPO)
     for repo, fname, dest in RVC_FILES:
         _hf_download(repo, fname, dest)
 
@@ -124,14 +131,9 @@ def setup_vocoder() -> None:
 
 
 def setup_diffsinger() -> None:
-    print("[DiffSinger] checkpoint acústico EN")
+    print("[DiffSinger] repo + checkpoint acústico EN (opcional)")
+    _clone(DIFFSINGER_REPO_URL, paths.DIFFSINGER_REPO)
     _hf_download(*DIFFSINGER_EN)
-
-
-def setup_repos() -> None:
-    print("[repos] clonando DiffSinger e RVC (áudio)")
-    for url, dest in REPOS:
-        _clone(url, dest)
 
 
 def setup_avatar() -> None:
@@ -143,24 +145,24 @@ def setup_avatar() -> None:
 
 
 COMPONENTS = {
-    "repos": setup_repos,
+    "seedvc": setup_seedvc,
     "rvc": setup_rvc,
     "vocoder": setup_vocoder,
     "diffsinger": setup_diffsinger,
     "avatar": setup_avatar,
 }
-# Componentes do caminho PADRÃO (motor de voz-guia = DSP embutido): só RVC.
-# DiffSinger/NSF-HiFiGAN só são necessários para o motor "diffsinger" (opt-in), e o
-# avatar (SadTalker) é proibido no Colab grátis — ambos ficam de fora por padrão.
-AUDIO_COMPONENTS = ["repos", "rvc"]
+# PADRÃO: só Seed-VC (timbre zero-shot) — o motor de voz-guia é o DSP embutido.
+# RVC/DiffSinger/avatar são opt-in.
+AUDIO_COMPONENTS = ["seedvc"]
 
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--only", choices=list(COMPONENTS), help="baixar apenas um componente")
+    ap.add_argument("--with-rvc", action="store_true",
+                    help="incluir RVC (timbre por treino; precisa de Python 3.10 + fairseq).")
     ap.add_argument("--with-diffsinger", action="store_true",
-                    help="incluir vocoder + checkpoint DiffSinger EN (motor de maior "
-                         "qualidade; precisa de voicebank EN e GPU). Padrão usa o motor DSP.")
+                    help="incluir vocoder + checkpoint DiffSinger EN (SVS de maior qualidade).")
     ap.add_argument("--with-avatar", action="store_true",
                     help="incluir o SadTalker (avatar). NÃO use no Colab grátis — "
                          "ele proíbe face-animation e encerra a sessão. Rode local/host permitido.")
@@ -171,15 +173,17 @@ def main() -> None:
         targets = [args.only]
     else:
         targets = list(AUDIO_COMPONENTS)
+        if args.with_rvc:
+            targets.append("rvc")
         if args.with_diffsinger:
             targets += ["vocoder", "diffsinger"]
         if args.with_avatar:
             targets.append("avatar")
     for name in targets:
         COMPONENTS[name]()
-    print("\nConcluído. O motor PADRÃO (DSP) já funciona só com o RVC baixado.")
+    print("\nConcluído. PADRÃO = voz-guia DSP + timbre Seed-VC (zero-shot, sem treino).")
     if "diffsinger" not in targets:
-        print("DiffSinger NÃO baixado (motor opcional). Use --with-diffsinger se quiser tentá-lo.")
+        print("DiffSinger NÃO baixado (motor opcional de maior qualidade). Use --with-diffsinger.")
     if "avatar" not in targets:
         print("Avatar (SadTalker) NÃO baixado. Rode com --with-avatar FORA do Colab grátis.")
 

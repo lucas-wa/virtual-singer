@@ -16,7 +16,7 @@ opcionalmente, anima um **avatar (rosto)** cantando o resultado.
  [2] voz-guia cantada (DSP embutido, padrão; DiffSinger opcional p/ +qualidade)
         │
         ▼
- [3] RVC v2 (treinado na sua voz) ──►  a MESMA performance no SEU timbre
+ [3] Seed-VC (zero-shot, clipe de referência 1-30s) ──►  a performance no timbre da voz
         │
         ▼
  [4] mix opcional com instrumental (Demucs) ──►  .wav final
@@ -80,10 +80,10 @@ python scripts/make_demo_song.py     # gera a música de demonstração (domíni
 | **Voz-guia DSP embutida (`src/svs/dsp_guide.py`, motor padrão)** | ✅ testado | só `numpy`/`soundfile` |
 | Conversão p/ formato DiffSinger (`src/svs/ds_format`) | ✅ testado | nada extra |
 | Detecção de hardware / mixagem / E/S | ✅ testado | `torch` (detecção), `soundfile` (E/S) |
-| Síntese SVS DiffSinger (motor opcional `--engine diffsinger`) | ⏳ requer setup | Python 3.10 + GPU + voicebank EN |
-| Treino/conversão de timbre (RVC) | ⏳ requer setup | Python 3.10 + GPU + pesos |
-| Separação de fontes (Demucs) | ⏳ requer setup | `demucs` instalado |
-| Avatar visual (SadTalker) | ⏳ requer setup | Python 3.10 + GPU + checkpoints |
+| Conversão de timbre **Seed-VC** (zero-shot, padrão) | ⏳ requer GPU | GPU + repo seed-vc (sem treino, sem fairseq) |
+| Síntese SVS DiffSinger (motor opcional `--engine diffsinger`) | ⏳ requer setup | GPU + voicebank EN |
+| Conversão por treino RVC (opcional `--with-rvc`) | ⏳ requer setup | Python 3.10 + GPU + fairseq |
+| Avatar visual (SadTalker, opcional `--with-avatar`) | ⏳ requer setup | GPU (proibido no Colab grátis) |
 
 ## Uso
 
@@ -94,16 +94,15 @@ python scripts/import_score.py minha_musica.musicxml --name minha_musica
 #    b) transcrever automaticamente a partir de VOCÊ cantando/tocando a melodia
 python scripts/transcribe.py minha_melodia.wav --name minha_musica --lyrics letra.txt
 
-# 2. Escolher a voz (alterne livremente — cada voz é uma pasta em data/voices/<nome>/):
+# 2. Escolher a voz de referência (Seed-VC é ZERO-SHOT: sem treino! basta um clipe de 1-30s).
+#    Alterne livremente — cada voz é uma pasta em data/voices/<nome>/ (ou um arquivo de áudio):
 #    (a) voz pronta da VocalSet (CC BY 4.0), para testar sem gravar:
 python scripts/get_sample_voice.py --list                 # ver cantores
 python scripts/get_sample_voice.py --singer female1       # baixa só esse cantor
-python scripts/train_voice.py --voice data/voices/vocalset_female1
-#    (b) ou a sua própria voz (>= 5 min em data/voices/<nome>/):
-python scripts/train_voice.py --voice data/voices/meu_nome
+#    (b) ou a sua própria voz: ponha alguns segundos de áudio em data/voices/meu_nome/
 
-# 3. Sintetizar a partitura na sua voz
-python -m src.pipeline --song data/songs/minha_musica --voice meu_nome --out out/demo.wav
+# 3. Sintetizar a partitura no timbre da voz (troque --voice para alternar)
+python -m src.pipeline --song data/songs/minha_musica --voice vocalset_female1 --out out/demo.wav
 
 # 3b. (opcional) com avatar: rosto cantando o áudio  ->  gera out/demo.mp4
 python scripts/get_face.py --name meu_avatar         # rosto sintético (não-real)
@@ -129,7 +128,7 @@ catálogos protegidos. Veja [`CONSENT.md`](CONSENT.md).
 | `src/score/` | parse de MIDI/MusicXML + letra → fonemas alinhados às notas |
 | `src/transcribe/` | AMT: áudio (sua voz/instrumento) → MIDI melódico |
 | `src/svs/` | DiffSinger + NSF-HiFiGAN → voz-guia cantada |
-| `src/voice/` | treino e inferência RVC (timbre do usuário) |
+| `src/voice/` | conversão de timbre: Seed-VC zero-shot (padrão) + RVC (opcional) |
 | `src/separate/` | Demucs (instrumental / limpeza de amostras) |
 | `src/avatar/` | SadTalker (foto + áudio → vídeo de rosto cantando) |
 | `src/pipeline.py` | orquestra a cadeia completa |
@@ -144,6 +143,6 @@ catálogos protegidos. Veja [`CONSENT.md`](CONSENT.md).
 
 ## Créditos / reuso
 
-Construído sobre projetos open-source: **DiffSinger**, **NSF-HiFiGAN**, **RVC**
-(Retrieval-based Voice Conversion), **Demucs**, **SadTalker** + **GFPGAN**,
-**music21**, **phonemizer**, **librosa**.
+Construído sobre projetos open-source: **Seed-VC** (conversão de timbre zero-shot),
+**DiffSinger** + **NSF-HiFiGAN** (SVS opcional), **RVC** (opcional), **Demucs**,
+**SadTalker** + **GFPGAN** (avatar), **music21**, **g2p_en**, **librosa**.
