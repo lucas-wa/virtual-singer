@@ -1,8 +1,11 @@
-"""Corrige a incompatibilidade do basicsr (usado por GFPGAN/SadTalker) com torchvision novo.
+"""Corrige incompatibilidades do SadTalker/basicsr com torch/torchvision/numpy novos.
 
-O basicsr importa `torchvision.transforms.functional_tensor`, removido no torchvision>=0.17.
-A função `rgb_to_grayscale` agora vive em `torchvision.transforms.functional`. Reescrevemos
-o import nos arquivos do basicsr instalado. Idempotente (não faz nada se já corrigido).
+Dois patches, ambos idempotentes:
+  1. basicsr: `torchvision.transforms.functional_tensor` -> `...functional`
+     (functional_tensor foi removido no torchvision>=0.17).
+  2. SadTalker (e basicsr): aliases removidos do numpy>=1.24 — `np.float`, `np.int`,
+     `np.bool`, `np.object`, `np.complex`, `np.str` -> builtins. Usa \b para NÃO tocar
+     em `np.float64`, `np.int32`, `np.bool_`, etc.
 
 Uso: python scripts/patch_sadtalker_env.py
 """
@@ -10,30 +13,62 @@ from __future__ import annotations
 
 import importlib.util
 import pathlib
+import re
+import sys
 
-OLD = "torchvision.transforms.functional_tensor"
-NEW = "torchvision.transforms.functional"
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
+from src import paths  # noqa: E402
+
+TV_OLD = "torchvision.transforms.functional_tensor"
+TV_NEW = "torchvision.transforms.functional"
+
+# np.<alias> -> builtin, só quando NÃO seguido de letra/dígito/_ (\b protege np.float64 etc.)
+NP_ALIASES = {"float": "float", "int": "int", "bool": "bool",
+              "object": "object", "complex": "complex", "str": "str"}
+NP_PATTERNS = [(re.compile(rf"\bnp\.{a}\b"), b) for a, b in NP_ALIASES.items()]
+
+
+def _patch_file(f: pathlib.Path) -> bool:
+    try:
+        text = f.read_text(encoding="utf-8")
+    except Exception:  # noqa: BLE001
+        return False
+    orig = text
+    if TV_OLD in text:
+        text = text.replace(TV_OLD, TV_NEW)
+    for pat, repl in NP_PATTERNS:
+        text = pat.sub(repl, text)
+    if text != orig:
+        f.write_text(text, encoding="utf-8")
+        return True
+    return False
+
+
+def _basicsr_root() -> pathlib.Path | None:
+    # find_spec NÃO executa o __init__ do basicsr (que falharia com o import quebrado).
+    spec = importlib.util.find_spec("basicsr")
+    return pathlib.Path(spec.origin).parent if spec and spec.origin else None
 
 
 def main() -> None:
-    # find_spec NÃO executa o __init__ do basicsr (que falharia com o import quebrado).
-    spec = importlib.util.find_spec("basicsr")
-    if spec is None or not spec.origin:
-        print("[patch] basicsr não encontrado; nada a fazer")
+    roots = []
+    br = _basicsr_root()
+    if br:
+        roots.append(br)
+    if paths.SADTALKER_REPO.exists():
+        roots.append(paths.SADTALKER_REPO)
+
+    if not roots:
+        print("[patch] basicsr e SadTalker não encontrados; nada a fazer")
         return
-    root = pathlib.Path(spec.origin).parent
 
     n = 0
-    for f in root.rglob("*.py"):
-        try:
-            text = f.read_text(encoding="utf-8")
-        except Exception:  # noqa: BLE001
-            continue
-        if OLD in text:
-            f.write_text(text.replace(OLD, NEW), encoding="utf-8")
-            print(f"[patch] corrigido: {f}")
-            n += 1
-    print(f"[patch] {n} arquivo(s) do basicsr ajustado(s) (functional_tensor -> functional)")
+    for root in roots:
+        for f in root.rglob("*.py"):
+            if _patch_file(f):
+                print(f"[patch] corrigido: {f}")
+                n += 1
+    print(f"[patch] {n} arquivo(s) ajustado(s) (functional_tensor + aliases np.*)")
 
 
 if __name__ == "__main__":
