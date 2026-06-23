@@ -80,6 +80,16 @@ srun singularity exec \
             touch "$AV_MARKER"
         fi
 
+        # SEMPRE garante o OpenCV HEADLESS (fora do marker): o container não tem as libs
+        # gráficas (libgthread/libGL) que o opencv-python completo exige. Idempotente.
+        if python3 -c "import cv2" 2>/dev/null; then
+            :
+        else
+            echo "[avatar] >>> trocando opencv-python por opencv-python-headless..."
+            python3 -m pip uninstall -y opencv-python opencv-contrib-python 2>/dev/null || true
+            python3 -m pip install --prefer-binary opencv-python-headless
+        fi
+
         echo "[avatar] gerando vídeo: $AVATAR_IMAGE + $AVATAR_AUDIO -> $AVATAR_OUT"
         python3 scripts/make_avatar.py --image "$AVATAR_IMAGE" \
             --audio "$AVATAR_AUDIO" --out "$AVATAR_OUT"
