@@ -97,6 +97,9 @@ srun singularity exec \
             python3 -m pip install --prefer-binary "opencv-python-headless==4.9.0.80" "numpy<2"
         fi
 
+        # Corrige o basicsr p/ torchvision novo (functional_tensor removido em >=0.17).
+        python3 scripts/patch_sadtalker_env.py
+
         echo "[avatar] gerando vídeo: $AVATAR_IMAGE + $AVATAR_AUDIO -> $AVATAR_OUT"
         python3 scripts/make_avatar.py --image "$AVATAR_IMAGE" \
             --audio "$AVATAR_AUDIO" --out "$AVATAR_OUT"
