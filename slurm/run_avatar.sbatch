@@ -87,14 +87,14 @@ srun singularity exec \
             touch "$AV_MARKER"
         fi
 
-        # SEMPRE garante o OpenCV HEADLESS (fora do marker): o container não tem as libs
-        # gráficas (libgthread/libGL) que o opencv-python completo exige. Idempotente.
-        if python3 -c "import cv2" 2>/dev/null; then
-            :
-        else
-            echo "[avatar] >>> trocando opencv-python por opencv-python-headless..."
+        # SEMPRE garante (fora do marker, idempotente):
+        #  - OpenCV HEADLESS (container sem libs gráficas libgthread/libGL);
+        #  - numpy<2: o SadTalker (scipy 1.10.1) e o torch do container foram compilados
+        #    p/ numpy 1.x; o opencv-headless NOVO exige numpy>=2 -> fixamos a 4.9 (numpy 1.x).
+        if ! python3 -c "import cv2, numpy, sys; sys.exit(0 if int(numpy.__version__.split('.')[0])<2 else 1)" 2>/dev/null; then
+            echo "[avatar] >>> ajustando OpenCV headless + numpy<2..."
             python3 -m pip uninstall -y opencv-python opencv-contrib-python 2>/dev/null || true
-            python3 -m pip install --prefer-binary opencv-python-headless
+            python3 -m pip install --prefer-binary "opencv-python-headless==4.9.0.80" "numpy<2"
         fi
 
         echo "[avatar] gerando vídeo: $AVATAR_IMAGE + $AVATAR_AUDIO -> $AVATAR_OUT"
