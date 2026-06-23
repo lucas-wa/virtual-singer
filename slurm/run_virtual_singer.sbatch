@@ -11,15 +11,14 @@
 #SBATCH --error=logs/vsinger_%j.err
 
 # ============================================================================
-# Cantor Virtual — treino RVC + síntese (+ avatar opcional) numa H100.
+# Cantor Virtual — síntese de canto (+ avatar opcional) numa H100.
 #
-# Imagem do container: precisa de PyTorch + CUDA 12 + Python 3.10 (fairseq exige 3.10).
-# Crie uma vez (exemplo):
-#   singularity pull /raid/user_lucasalves/images/pytorch_2.2_cu121_py310.sif \
-#       docker://pytorch/pytorch:2.2.2-cuda12.1-cudnn8-runtime
+# Caminho PADRÃO: voz-guia DSP + timbre Seed-VC (zero-shot, SEM treino, SEM fairseq).
+# Roda em container PyTorch+CUDA com Python 3.12 (ex.: a imagem vllm). Só o caminho RVC
+# opcional (--with-rvc) exigiria Python 3.10.
 #
-# Coloque o repositório em $HOST_RAID/$PROJECT_SUBDIR (ex.: /raid/user_lucasalves/virtual-singer).
-# Rode:  sbatch slurm/run_virtual_singer.sbatch
+# Coloque o repositório em $HOST_RAID/$PROJECT_SUBDIR e rode:
+#   sbatch slurm/run_virtual_singer.sbatch
 # ============================================================================
 
 CONTAINER_IMAGE="${CONTAINER_IMAGE:-/raid/user_lucasalves/images/vllm-openai_nightly-2e36cdbe2b4bff4370a02105fdfbdd015d6ec4e8.sif}"
@@ -61,6 +60,10 @@ srun singularity exec \
         export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
         echo "CUDA_VISIBLE_DEVICES=$CUDA_VISIBLE_DEVICES"
 
+        # Rede do nó de cómputo pode cair em downloads grandes -> pip resiliente.
+        export PIP_RETRIES=10
+        export PIP_DEFAULT_TIMEOUT=120
+
         cd "/work/'"$PROJECT_SUBDIR"'"
         git pull --ff-only 2>/dev/null || true
 
@@ -79,14 +82,18 @@ srun singularity exec \
         python3 -m pip install --quiet -r requirements.txt
 
         # Baixa o que o experimento precisa (avatar permitido aqui — não é Colab).
-        SETUP_FLAGS=""
+        SETUP_FLAGS="--with-avatar --with-diffsinger"
         [ "$ENGINE" = "diffsinger" ] && SETUP_FLAGS="$SETUP_FLAGS --with-diffsinger"
         [ -n "$AVATAR_IMAGE" ]       && SETUP_FLAGS="$SETUP_FLAGS --with-avatar"
         python3 scripts/setup_models.py $SETUP_FLAGS
 
         # Instala as deps do Seed-VC (do próprio repo clonado).
         [ -f third_party/seed-vc/requirements.txt ] && \
-            python3 -m pip install --quiet -r third_party/seed-vc/requirements.txt
+            python3 -m pip install -r third_party/seed-vc/requirements.txt
+
+        # Se o avatar estiver ligado, instala também as deps do SadTalker.
+        [ -n "$AVATAR_IMAGE" ] && [ -f third_party/SadTalker/requirements.txt ] && \
+            python3 -m pip install -r third_party/SadTalker/requirements.txt
 
         # Pipeline ponta a ponta: voz-guia (DSP) -> timbre (Seed-VC) -> [avatar].
         bash scripts/run_all.sh
