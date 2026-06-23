@@ -36,7 +36,7 @@ def synthesize(perf: Performance, out_wav: str | Path,
     parte específica do projeto fica isolada aqui.
     """
     profile = profile or detect_profile()
-    out_wav = Path(out_wav)
+    out_wav = Path(out_wav).resolve()   # ABSOLUTO: DiffSinger roda com cwd=repo
     work = out_wav.parent / "_svs_work"
     ds_path = _write_ds(perf, work)
 
@@ -44,7 +44,7 @@ def synthesize(perf: Performance, out_wav: str | Path,
     if not infer.exists():
         raise RuntimeError(
             f"DiffSinger não encontrado em {infer}. "
-            "Rode: python scripts/setup_models.py --only repos"
+            "Rode: python scripts/setup_models.py --with-diffsinger"
         )
 
     cmd = [

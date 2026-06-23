@@ -72,7 +72,10 @@ def convert(source_wav: str | Path, reference: str | Path, out_wav: str | Path,
     sing=True ativa o condicionamento de F0 (modo canto). semitone_shift transpõe.
     """
     profile = profile or detect_profile()
-    source_wav, reference, out_wav = Path(source_wav), Path(reference), Path(out_wav)
+    # ABSOLUTOS: o Seed-VC roda com cwd=repo, então caminhos relativos quebrariam.
+    source_wav = Path(source_wav).resolve()
+    reference = Path(reference).resolve()
+    out_wav = Path(out_wav).resolve()
     out_wav.parent.mkdir(parents=True, exist_ok=True)
 
     infer = paths.SEEDVC_REPO / "inference.py"
@@ -82,7 +85,7 @@ def convert(source_wav: str | Path, reference: str | Path, out_wav: str | Path,
             "Rode: python scripts/setup_models.py --only seedvc"
         )
 
-    work = out_wav.parent / "_seedvc_work"
+    work = (out_wav.parent / "_seedvc_work").resolve()
     work.mkdir(parents=True, exist_ok=True)
     cmd = [
         sys.executable, str(infer),

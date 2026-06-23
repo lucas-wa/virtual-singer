@@ -36,9 +36,10 @@ def animate(image_path: str | Path, audio_path: str | Path, out_video: str | Pat
     - enhancer='gfpgan' melhora a nitidez do rosto (None desativa, mais rápido).
     """
     profile = profile or detect_profile()
-    image_path = Path(image_path)
-    audio_path = Path(audio_path)
-    out_video = Path(out_video)
+    # ABSOLUTOS: o SadTalker roda com cwd=repo, caminhos relativos quebrariam.
+    image_path = Path(image_path).resolve()
+    audio_path = Path(audio_path).resolve()
+    out_video = Path(out_video).resolve()
     out_video.parent.mkdir(parents=True, exist_ok=True)
 
     if not image_path.exists():
