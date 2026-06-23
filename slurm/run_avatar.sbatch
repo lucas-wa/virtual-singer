@@ -7,8 +7,8 @@
 #SBATCH --time=UNLIMITED
 #SBATCH --nodelist=dgx-H100-02
 #SBATCH --job-name=vsinger-avatar
-#SBATCH --output=logs/avatar_%j.out
-#SBATCH --error=logs/avatar_%j.err
+#SBATCH --output=logs/avatar/avatar_%j.out
+#SBATCH --error=logs/avatar/avatar_%j.err
 
 # ============================================================================
 # Avatar (SadTalker): foto + áudio JÁ gerado -> vídeo .mp4.

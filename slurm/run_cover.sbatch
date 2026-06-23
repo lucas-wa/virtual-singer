@@ -7,8 +7,8 @@
 #SBATCH --time=UNLIMITED
 #SBATCH --nodelist=dgx-H100-02
 #SBATCH --job-name=vsinger-cover
-#SBATCH --output=logs/cover_%j.out
-#SBATCH --error=logs/cover_%j.err
+#SBATCH --output=logs/cover/cover_%j.out
+#SBATCH --error=logs/cover/cover_%j.err
 
 # ============================================================================
 # Cover (conversão de timbre): pega as músicas de um cantor FONTE e as converte para a

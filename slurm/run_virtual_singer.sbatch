@@ -7,8 +7,8 @@
 #SBATCH --time=UNLIMITED
 #SBATCH --nodelist=dgx-H100-02
 #SBATCH --job-name=virtual-singer
-#SBATCH --output=logs/vsinger_%j.out
-#SBATCH --error=logs/vsinger_%j.err
+#SBATCH --output=logs/vsinger/vsinger_%j.out
+#SBATCH --error=logs/vsinger/vsinger_%j.err
 
 # ============================================================================
 # Cantor Virtual — síntese de canto (+ avatar opcional) numa H100.
