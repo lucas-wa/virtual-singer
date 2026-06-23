@@ -5,6 +5,6 @@ OPCIONAL: RVC (treino por voz) — importe `from src.voice.rvc import train_voic
 """
 from __future__ import annotations
 
-from .seedvc import convert, resolve_reference
+from .seedvc import convert, resolve_reference, finetune, ft_paths
 
-__all__ = ["convert", "resolve_reference"]
+__all__ = ["convert", "resolve_reference", "finetune", "ft_paths"]

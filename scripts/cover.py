@@ -41,6 +41,9 @@ def main() -> None:
                     help="NÃO separar vocais com Demucs (use se a fonte já for a cappella)")
     ap.add_argument("--no-remix", dest="remix", action="store_false",
                     help="não remixar com o instrumental (sai só o vocal convertido)")
+    ap.add_argument("--checkpoint", default=None,
+                    help="checkpoint Seed-VC fine-tunado (melhor fidelidade; opcional)")
+    ap.add_argument("--config", default=None, help="config do checkpoint fine-tunado")
     ap.set_defaults(separate=True, remix=True)
     args = ap.parse_args()
 
@@ -82,9 +85,10 @@ def main() -> None:
             else:
                 source = song
 
-            # 2. converter o vocal para o timbre alvo (Seed-VC zero-shot)
+            # 2. converter o vocal para o timbre alvo (Seed-VC; usa checkpoint se houver)
             converted = work / f"{song.stem}__{target}_voc.wav"
-            convert(source, reference, converted, profile=profile, semitone_shift=args.semitone)
+            convert(source, reference, converted, profile=profile, semitone_shift=args.semitone,
+                    checkpoint=args.checkpoint, config=args.config)
 
             # 3. remixar com o instrumental original (ou só o vocal convertido)
             if args.separate and args.remix and instrumental:

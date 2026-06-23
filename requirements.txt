@@ -10,10 +10,11 @@ soundfile
 numpy            # SEM pin <2.0 (era p/ o fairseq, já abandonado). numpy 2.x tem wheels p/ py3.12;
                  # fixar <2.0 forçava compilar do source e quebrava com pkgutil.ImpImporter no 3.12.
 scipy
-# NOTA: praat-parselmouth, pyworld e demucs saíram do core — não são usados no caminho
-#       padrão (DSP + Seed-VC) e arriscam compilar do source / forçar numpy<2 no Python 3.12.
-#       Para a mix com instrumental (Demucs), instale à parte:  pip install demucs
-#       O Seed-VC traz suas próprias deps via third_party/seed-vc/requirements.txt.
+demucs                   # separação de vocais (cover: separa o vocal antes da conversão)
+imageio-ffmpeg           # ffmpeg empacotado (ler MP3 sem ffmpeg do sistema)
+# NOTA: praat-parselmouth e pyworld saíram do core — eram só p/ o RVC (abandonado) e
+#       compilam do source, quebrando no Python 3.12. O Seed-VC traz suas próprias deps
+#       via third_party/seed-vc/requirements.txt.
 
 # --- Partitura / música ---
 music21                  # parse de MusicXML

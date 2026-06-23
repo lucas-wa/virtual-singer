@@ -64,12 +64,20 @@ def _newest_wav(folder: Path) -> Path | None:
     return max(wavs, key=lambda p: p.stat().st_mtime) if wavs else None
 
 
+# Config do Seed-VC para canto (com condicionamento de F0), relativo ao repo.
+SVC_F0_CONFIG = "configs/presets/config_dit_mel_seed_uvit_whisper_base_f0_44k.yml"
+
+
 def convert(source_wav: str | Path, reference: str | Path, out_wav: str | Path,
             profile: RuntimeProfile | None = None, diffusion_steps: int = 30,
-            semitone_shift: int = 0, sing: bool = True) -> Path:
+            semitone_shift: int = 0, sing: bool = True,
+            checkpoint: str | Path | None = None,
+            config: str | Path | None = None) -> Path:
     """Converte `source_wav` (voz-guia) para o timbre de `reference` (clipe curto).
 
     sing=True ativa o condicionamento de F0 (modo canto). semitone_shift transpõe.
+    checkpoint/config: se dados, usa um modelo Seed-VC fine-tunado (melhor fidelidade);
+    senão, usa o modelo zero-shot padrão (baixado automaticamente).
     """
     profile = profile or detect_profile()
     # ABSOLUTOS: o Seed-VC roda com cwd=repo, então caminhos relativos quebrariam.
@@ -97,6 +105,11 @@ def convert(source_wav: str | Path, reference: str | Path, out_wav: str | Path,
         "--semi-tone-shift", str(semitone_shift),
         "--fp16", "True" if profile.use_fp16 else "False",
     ]
+    if checkpoint:
+        cmd += ["--checkpoint", str(Path(checkpoint).resolve())]
+        if config:
+            cmd += ["--config", str(Path(config).resolve())]
+        print(f"[seed-vc] usando checkpoint fine-tunado: {checkpoint}")
     print(f"[seed-vc] {profile.summary()}")
     print(f"[seed-vc] $ {' '.join(cmd)}")
     subprocess.run(cmd, check=True, cwd=str(paths.SEEDVC_REPO))
@@ -107,3 +120,46 @@ def convert(source_wav: str | Path, reference: str | Path, out_wav: str | Path,
     produced.replace(out_wav)
     print(f"[seed-vc] timbre convertido -> {out_wav}")
     return out_wav
+
+
+def ft_paths(run_name: str) -> tuple[Path, Path]:
+    """Caminhos do checkpoint + config de um fine-tune (em third_party/seed-vc/runs/<run>)."""
+    run_dir = paths.SEEDVC_REPO / "runs" / run_name
+    return run_dir / "ft_model.pth", run_dir / Path(SVC_F0_CONFIG).name
+
+
+def finetune(dataset_dir: str | Path, run_name: str,
+             profile: RuntimeProfile | None = None, max_steps: int = 1000,
+             batch_size: int = 2, save_every: int = 500) -> tuple[Path, Path]:
+    """Fine-tuna o Seed-VC nos clipes de `dataset_dir` (1-30s, voz limpa, sem música).
+
+    Retorna (checkpoint, config) prontos para usar em convert(). Reexecutar com o mesmo
+    run_name retoma do último checkpoint (o train.py do Seed-VC suporta resume).
+    """
+    profile = profile or detect_profile()
+    dataset_dir = Path(dataset_dir).resolve()
+    train = paths.SEEDVC_REPO / "train.py"
+    if not train.exists():
+        raise RuntimeError(
+            f"Seed-VC não encontrado em {train}. Rode: python scripts/setup_models.py --only seedvc"
+        )
+
+    cmd = [
+        sys.executable, str(train),
+        "--config", SVC_F0_CONFIG,                 # relativo ao repo (cwd=repo)
+        "--dataset-dir", str(dataset_dir),
+        "--run-name", run_name,
+        "--batch-size", str(batch_size),
+        "--max-steps", str(max_steps),
+        "--save-every", str(save_every),
+        "--num-workers", "0",
+    ]
+    print(f"[seed-vc ft] {profile.summary()}")
+    print(f"[seed-vc ft] $ {' '.join(cmd)}")
+    subprocess.run(cmd, check=True, cwd=str(paths.SEEDVC_REPO))
+
+    ckpt, cfg = ft_paths(run_name)
+    if not ckpt.exists():
+        raise RuntimeError(f"fine-tune não gerou checkpoint em {ckpt}")
+    print(f"[seed-vc ft] checkpoint -> {ckpt}")
+    return ckpt, cfg

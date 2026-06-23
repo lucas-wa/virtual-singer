@@ -63,6 +63,8 @@ srun singularity exec \
         export COVER_SEMITONE="${COVER_SEMITONE:-0}"        # transposição
         export COVER_SEPARATE="${COVER_SEPARATE:-1}"        # 1=separar vocais (Demucs) | 0=não
         export COVER_REMIX="${COVER_REMIX:-1}"              # 1=remixar c/ instrumental | 0=só vocal
+        export COVER_CHECKPOINT="${COVER_CHECKPOINT:-}"     # checkpoint fine-tunado (opcional)
+        export COVER_CONFIG="${COVER_CONFIG:-}"             # config do checkpoint (opcional)
         # -------------------------------------------
 
         # Deps: mesmo esquema do job de áudio (Seed-VC + Demucs, py3.12) — 1x e cacheia.
@@ -92,6 +94,8 @@ srun singularity exec \
         COVER_ARGS=""
         [ "$COVER_SEPARATE" = "0" ] && COVER_ARGS="$COVER_ARGS --no-separate"
         [ "$COVER_REMIX" = "0" ]    && COVER_ARGS="$COVER_ARGS --no-remix"
+        [ -n "$COVER_CHECKPOINT" ]  && COVER_ARGS="$COVER_ARGS --checkpoint $COVER_CHECKPOINT"
+        [ -n "$COVER_CONFIG" ]      && COVER_ARGS="$COVER_ARGS --config $COVER_CONFIG"
 
         echo "[cover] $SOURCE_SINGER -> $TARGET_SINGER (raiz: $CANTORES_ROOT) sep=$COVER_SEPARATE remix=$COVER_REMIX"
         python3 scripts/cover.py \
