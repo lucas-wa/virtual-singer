@@ -27,6 +27,12 @@ NP_ALIASES = {"float": "float", "int": "int", "bool": "bool",
               "object": "object", "complex": "complex", "str": "str"}
 NP_PATTERNS = [(re.compile(rf"\bnp\.{a}\b"), b) for a, b in NP_ALIASES.items()]
 
+# Correções literais (bugs do SadTalker com numpy novo): montar array misturando escalar
+# com array de 1 elemento agora dá "inhomogeneous shape" -> extrair o escalar com [0].
+LITERAL_FIXES = {
+    "np.array([w0, h0, s, t[0], t[1]])": "np.array([w0, h0, s, t[0][0], t[1][0]])",
+}
+
 
 def _patch_file(f: pathlib.Path) -> bool:
     try:
@@ -36,6 +42,9 @@ def _patch_file(f: pathlib.Path) -> bool:
     orig = text
     if TV_OLD in text:
         text = text.replace(TV_OLD, TV_NEW)
+    for old, new in LITERAL_FIXES.items():
+        if old in text:
+            text = text.replace(old, new)
     for pat, repl in NP_PATTERNS:
         text = pat.sub(repl, text)
     if text != orig:
