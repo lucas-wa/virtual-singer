@@ -46,6 +46,14 @@ SEEDVC_REPO_URL = "https://github.com/Plachtaa/seed-vc.git"
 RVC_REPO_URL = "https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI.git"
 DIFFSINGER_REPO_URL = "https://github.com/openvpi/DiffSinger.git"
 SADTALKER_REPO_URL = "https://github.com/OpenTalker/SadTalker.git"
+YINGMUSIC_REPO_URL = "https://github.com/GiantAILab/YingMusic-SVC.git"
+# Checkpoints do YingMusic-SVC (HF). Modelo final RL + separador de acompanhamento.
+YINGMUSIC_FILES = [
+    ("GiantAILab/YingMusic-SVC", "YingMusic-SVC-full.pt",
+     paths.YINGMUSIC_CKPT / "YingMusic-SVC-full.pt"),
+    ("GiantAILab/YingMusic-SVC", "bs_roformer.ckpt",
+     paths.YINGMUSIC_CKPT / "bs_roformer.ckpt"),
+]
 
 # Checkpoint acústico do DiffSinger em inglês (modelo da comunidade / OpenUtau).
 # Ajuste o repo_id para o modelo EN que você escolher usar.
@@ -136,6 +144,13 @@ def setup_diffsinger() -> None:
     _hf_download(*DIFFSINGER_EN)
 
 
+def setup_yingmusic() -> None:
+    print("[YingMusic-SVC] clonando repo + checkpoints (SVC SOTA; precisa py3.10)")
+    _clone(YINGMUSIC_REPO_URL, paths.YINGMUSIC_REPO)
+    for repo, fname, dest in YINGMUSIC_FILES:
+        _hf_download(repo, fname, dest)
+
+
 def setup_avatar() -> None:
     print("[SadTalker] AVISO: NÃO rode isto no Colab grátis (proíbe face-animation).")
     print("[SadTalker] clonando repo + checkpoints do avatar")
@@ -146,6 +161,7 @@ def setup_avatar() -> None:
 
 COMPONENTS = {
     "seedvc": setup_seedvc,
+    "yingmusic": setup_yingmusic,
     "rvc": setup_rvc,
     "vocoder": setup_vocoder,
     "diffsinger": setup_diffsinger,
@@ -159,6 +175,8 @@ AUDIO_COMPONENTS = ["seedvc"]
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--only", choices=list(COMPONENTS), help="baixar apenas um componente")
+    ap.add_argument("--with-yingmusic", action="store_true",
+                    help="incluir o YingMusic-SVC (SVC SOTA, zero-shot; precisa de Python 3.10).")
     ap.add_argument("--with-rvc", action="store_true",
                     help="incluir RVC (timbre por treino; precisa de Python 3.10 + fairseq).")
     ap.add_argument("--with-diffsinger", action="store_true",
@@ -173,6 +191,8 @@ def main() -> None:
         targets = [args.only]
     else:
         targets = list(AUDIO_COMPONENTS)
+        if args.with_yingmusic:
+            targets.append("yingmusic")
         if args.with_rvc:
             targets.append("rvc")
         if args.with_diffsinger:

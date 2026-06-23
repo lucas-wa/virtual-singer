@@ -46,6 +46,8 @@ def main() -> None:
     ap.add_argument("--checkpoint", default=None,
                     help="checkpoint Seed-VC fine-tunado (melhor fidelidade; opcional)")
     ap.add_argument("--config", default=None, help="config do checkpoint fine-tunado")
+    ap.add_argument("--engine", choices=["seedvc", "yingmusic"], default="seedvc",
+                    help="motor de conversão: seedvc (py3.12) | yingmusic (SOTA, py3.10)")
     ap.set_defaults(separate=True, remix=True)
     args = ap.parse_args()
 
@@ -87,23 +89,33 @@ def main() -> None:
             else:
                 source = song
 
-            # 2. converter o vocal para o timbre alvo (Seed-VC; usa checkpoint se houver)
-            converted = work / f"{song.stem}__{target}_voc.wav"
-            convert(source, reference, converted, profile=profile, semitone_shift=args.semitone,
-                    diffusion_steps=args.diffusion_steps,
-                    checkpoint=args.checkpoint, config=args.config)
-
-            # 3. salva SEMPRE o vocal isolado convertido (serve p/ animar o avatar — lip-sync)
-            voc, sr = audio.load_wav(converted)
             vocal_out = out_dir / f"{song.stem}__{target}_vocal.wav"
-            audio.save_wav(vocal_out, voc, sr)
 
-            # 4. saída principal: mix com o instrumental original (ou só o vocal)
-            if args.separate and args.remix and instrumental:
-                inst, _ = audio.load_wav(instrumental, sr=sr)
-                audio.save_wav(out, audio.mix(voc, inst), sr)
+            if args.engine == "yingmusic":
+                # YingMusic faz o remix internamente (recebe vocal + acompanhamento).
+                from src.voice import yingmusic
+                yingmusic.convert(source, reference, vocal_out, accompany=None,
+                                  profile=profile, diffusion_steps=args.diffusion_steps,
+                                  checkpoint=args.checkpoint)   # só o vocal convertido
+                if args.separate and args.remix and instrumental:
+                    yingmusic.convert(source, reference, out, accompany=instrumental,
+                                      profile=profile, diffusion_steps=args.diffusion_steps,
+                                      checkpoint=args.checkpoint)  # mix convertida
+                else:
+                    audio.save_wav(out, *audio.load_wav(vocal_out))
             else:
-                audio.save_wav(out, voc, sr)
+                # Seed-VC: converte o vocal e remixa via numpy (com o instrumental original).
+                converted = work / f"{song.stem}__{target}_voc.wav"
+                convert(source, reference, converted, profile=profile, semitone_shift=args.semitone,
+                        diffusion_steps=args.diffusion_steps,
+                        checkpoint=args.checkpoint, config=args.config)
+                voc, sr = audio.load_wav(converted)
+                audio.save_wav(vocal_out, voc, sr)        # vocal isolado (p/ avatar)
+                if args.separate and args.remix and instrumental:
+                    inst, _ = audio.load_wav(instrumental, sr=sr)
+                    audio.save_wav(out, audio.mix(voc, inst), sr)
+                else:
+                    audio.save_wav(out, voc, sr)
             done.append(out)
         except Exception as e:  # noqa: BLE001
             print(f"[cover] FALHOU em {song.name}: {e}")
