@@ -23,6 +23,15 @@ def separate(input_path: str | Path, out_dir: str | Path,
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
+    stem_dir = out_dir / model / input_path.stem
+    vocals = stem_dir / "vocals.wav"
+    instrumental = stem_dir / "no_vocals.wav"
+
+    # Cache: se já separamos esta faixa (mesma out_dir), reusa e não reprocessa.
+    if vocals.exists() and instrumental.exists():
+        print(f"[Demucs] cache: reusando {stem_dir}")
+        return vocals, instrumental
+
     cmd = [sys.executable, "-m", "demucs", "-n", model, "-o", str(out_dir)]
     if two_stems:
         cmd += ["--two-stems", two_stems]
@@ -30,8 +39,4 @@ def separate(input_path: str | Path, out_dir: str | Path,
 
     print(f"[Demucs] $ {' '.join(cmd)}")
     subprocess.run(cmd, check=True)
-
-    stem_dir = out_dir / model / input_path.stem
-    vocals = stem_dir / "vocals.wav"
-    instrumental = stem_dir / "no_vocals.wav"
     return vocals, instrumental
