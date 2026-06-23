@@ -20,7 +20,12 @@
 # Defina no slurm/.env (igual ao cover):  SOURCE_SINGER, TARGET_SINGER, CANTORES_ROOT
 # ============================================================================
 
-CONTAINER_IMAGE="${AVATAR_CONTAINER_IMAGE:-/raid/user_lucasalves/images/pytorch_2.2_cu121_py310.sif}"
+# YingMusic compila deps em C -> precisa de gcc. A imagem -devel (não -runtime) tem.
+# Crie uma vez:
+#   singularity pull /raid/user_lucasalves/images/pytorch_2.2_cu121_py310_devel.sif \
+#       docker://pytorch/pytorch:2.2.2-cuda12.1-cudnn8-devel
+# e aponte YING_CONTAINER_IMAGE para ela (no slurm/.env). Default cai na py3.10 que você já tem.
+CONTAINER_IMAGE="${YING_CONTAINER_IMAGE:-${AVATAR_CONTAINER_IMAGE:-/raid/user_lucasalves/images/pytorch_2.2_cu121_py310.sif}}"
 HOST_RAID="${HOST_RAID:-/raid/user_lucasalves}"
 PROJECT_SUBDIR="${PROJECT_SUBDIR:-ufg/pav/virtual-singer}"
 
@@ -75,7 +80,12 @@ srun singularity exec \
         # requirements às vezes incompleto, e um marker antigo pulava esta etapa.
         # Idempotente (pip não reinstala o que já está satisfeito).
         if [ -f third_party/YingMusic-SVC/requirements.txt ]; then
-            python3 -m pip install --prefer-binary -r third_party/YingMusic-SVC/requirements.txt
+            # O container py3.10 (runtime) NÃO tem gcc -> deps que compilam C falham.
+            # webrtcvad compila; trocamos pelo wheel pré-compilado webrtcvad-wheels.
+            grep -ivE "^webrtcvad([=<>! ]|$)" third_party/YingMusic-SVC/requirements.txt \
+                > /tmp/ying_reqs.txt || cp third_party/YingMusic-SVC/requirements.txt /tmp/ying_reqs.txt
+            python3 -m pip install --prefer-binary -r /tmp/ying_reqs.txt
+            python3 -m pip install --prefer-binary webrtcvad-wheels
         fi
         # deps comuns que faltam em requirements de pesquisa:
         python3 -m pip install --prefer-binary munch
