@@ -80,6 +80,9 @@ srun singularity exec \
         FF="$(python3 -c "import imageio_ffmpeg; print(imageio_ffmpeg.get_ffmpeg_exe())" 2>/dev/null || true)"
         [ -n "$FF" ] && [ -x "$FF" ] && ln -sf "$FF" /work/.home/.local/bin/ffmpeg
 
+        # Corrige o bug in-place do Demucs com PyTorch novo (idempotente).
+        python3 scripts/patch_demucs.py
+
         FT_ARGS=""
         [ "$FT_SEPARATE" = "0" ] && FT_ARGS="--no-separate"
 

@@ -92,6 +92,9 @@ srun singularity exec \
             echo "[cover] ffmpeg -> $FFMPEG_BIN"
         fi
 
+        # Corrige o bug in-place do Demucs com PyTorch novo (idempotente).
+        python3 scripts/patch_demucs.py
+
         COVER_ARGS=""
         [ "$COVER_SEPARATE" = "0" ] && COVER_ARGS="$COVER_ARGS --no-separate"
         [ "$COVER_REMIX" = "0" ]    && COVER_ARGS="$COVER_ARGS --no-remix"
