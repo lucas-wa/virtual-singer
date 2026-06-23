@@ -67,13 +67,20 @@ srun singularity exec \
         AV_MARKER="/work/.home/.avatar310_deps_ok_v1"
         [ -n "${REINSTALL:-}" ] && rm -f "$AV_MARKER"
 
-        # huggingface_hub/requests são necessários para o setup_models baixar os checkpoints.
-        python3 -m pip install -U pip setuptools wheel
-        python3 -m pip install --prefer-binary huggingface_hub requests
-        # Clona o SadTalker + baixa os checkpoints do avatar.
+        # Instala as deps UMA vez (persistem em /work/.home/.local; wheels em PIP_CACHE_DIR).
+        # Marker evita reinstalar a cada run. Para forçar: REINSTALL=1 no slurm/.env.
+        if [ ! -f "$AV_MARKER" ]; then
+            echo "[avatar] >>> instalando deps (1ª vez; cache em /work)..."
+            python3 -m pip install -U pip setuptools wheel
+            python3 -m pip install --prefer-binary huggingface_hub requests
+        else
+            echo "[avatar] deps já instaladas (marker presente) — pulando pip. REINSTALL=1 força."
+        fi
+
+        # Clona o SadTalker + baixa os checkpoints (idempotente: pula se já existem; HF cacheado).
         python3 scripts/setup_models.py --with-avatar
 
-        # Deps do SadTalker (no py3.10 instalam normalmente).
+        # Requirements do SadTalker — só na 1ª vez (no py3.10 instalam normalmente).
         if [ ! -f "$AV_MARKER" ]; then
             echo "[avatar] >>> instalando requirements do SadTalker..."
             python3 -m pip install --prefer-binary -r third_party/SadTalker/requirements.txt
