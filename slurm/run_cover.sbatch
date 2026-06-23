@@ -56,9 +56,9 @@ srun singularity exec \
         git pull --ff-only 2>/dev/null || true
 
         # ---- PARÂMETROS (defina no slurm/.env) ----
-        export SOURCE_SINGER="${SOURCE_SINGER:-priscila}"   # de quem são as músicas
-        export TARGET_SINGER="${TARGET_SINGER:-lucas}"      # voz que vai cantar
-        export CANTORES_ROOT="${CANTORES_ROOT:-cantores}"   # raiz das pastas de cantores
+        export SOURCE_SINGER="${SOURCE_SINGER:-olivia}"   # de quem são as músicas
+        export TARGET_SINGER="${TARGET_SINGER:-sabrina}"      # voz que vai cantar
+        export CANTORES_ROOT="${CANTORES_ROOT:-singers}"   # raiz das pastas de cantores
         export COVER_LIMIT="${COVER_LIMIT:-0}"              # nº máx. de músicas (0=todas)
         export COVER_SEMITONE="${COVER_SEMITONE:-0}"        # transposição
         export COVER_SEPARATE="${COVER_SEPARATE:-1}"        # 1=separar vocais (Demucs) | 0=não
