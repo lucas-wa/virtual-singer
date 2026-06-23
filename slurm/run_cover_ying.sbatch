@@ -20,12 +20,12 @@
 # Defina no slurm/.env (igual ao cover):  SOURCE_SINGER, TARGET_SINGER, CANTORES_ROOT
 # ============================================================================
 
-# YingMusic compila deps em C -> precisa de gcc. A imagem -devel (não -runtime) tem.
-# Crie uma vez:
+# YingMusic compila deps em C -> precisa de gcc, que SÓ existe na imagem -devel (não -runtime).
+# Padrão = imagem -devel. Crie-a uma vez:
 #   singularity pull /raid/user_lucasalves/images/pytorch_2.2_cu121_py310_devel.sif \
 #       docker://pytorch/pytorch:2.2.2-cuda12.1-cudnn8-devel
-# e aponte YING_CONTAINER_IMAGE para ela (no slurm/.env). Default cai na py3.10 que você já tem.
-CONTAINER_IMAGE="${YING_CONTAINER_IMAGE:-${AVATAR_CONTAINER_IMAGE:-/raid/user_lucasalves/images/pytorch_2.2_cu121_py310.sif}}"
+# (sobrescreva com YING_CONTAINER_IMAGE no slurm/.env se usar outra.)
+CONTAINER_IMAGE="${YING_CONTAINER_IMAGE:-/raid/user_lucasalves/images/pytorch_2.2_cu121_py310_devel.sif}"
 HOST_RAID="${HOST_RAID:-/raid/user_lucasalves}"
 PROJECT_SUBDIR="${PROJECT_SUBDIR:-ufg/pav/virtual-singer}"
 
@@ -57,6 +57,14 @@ srun singularity exec \
 
         cd "/work/'"$PROJECT_SUBDIR"'"
         git pull --ff-only 2>/dev/null || true
+
+        # Checagem de toolchain: deps em C (webrtcvad etc.) precisam de gcc.
+        if command -v gcc >/dev/null 2>&1; then
+            echo "[env] gcc OK: $(gcc --version | head -1)"
+        else
+            echo "[env] AVISO: sem gcc neste container. Deps que compilam C vão falhar."
+            echo "[env] Use a imagem -devel (YING_CONTAINER_IMAGE) — veja o cabeçalho do .sbatch."
+        fi
 
         # ---- PARÂMETROS (slurm/.env) ----
         export SOURCE_SINGER="${SOURCE_SINGER:-priscila}"
