@@ -23,13 +23,19 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--image", required=True, help="foto do rosto (sua/sintética/consentida)")
-    ap.add_argument("--audio", required=True, help="áudio cantado já gerado (.wav)")
+    ap.add_argument("--audio", required=True,
+                    help="áudio que ANIMA o avatar — ideal: só o vocal (melhor lip-sync)")
+    ap.add_argument("--final-audio", default=None,
+                    help="áudio final do vídeo (ex.: a mix completa); troca a trilha no fim")
     ap.add_argument("--out", default=str(paths.OUT / "avatar.mp4"), help="vídeo de saída (.mp4)")
+    ap.add_argument("--size", type=int, default=512, choices=[256, 512],
+                    help="resolução do render facial (512 = melhor; precisa de mais VRAM)")
     ap.add_argument("--motion", action="store_true",
                     help="permitir mais movimento de cabeça (default: estável p/ canto)")
     args = ap.parse_args()
 
-    out = animate(args.image, args.audio, args.out, still=not args.motion)
+    out = animate(args.image, args.audio, args.out, still=not args.motion,
+                  size=args.size, final_audio=args.final_audio)
     print(f"[make_avatar] vídeo pronto -> {out}")
 
 

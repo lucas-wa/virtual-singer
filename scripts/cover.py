@@ -37,6 +37,8 @@ def main() -> None:
     ap.add_argument("--out-dir", default=str(paths.OUT / "covers"), help="pasta de saída")
     ap.add_argument("--limit", type=int, default=0, help="processar no máximo N músicas (0 = todas)")
     ap.add_argument("--semitone", type=int, default=0, help="transpor em semitons (ajuste de tessitura)")
+    ap.add_argument("--diffusion-steps", type=int, default=30,
+                    help="passos de difusão do Seed-VC (mais = melhor/mais lento; ex.: 50-100)")
     ap.add_argument("--no-separate", dest="separate", action="store_false",
                     help="NÃO separar vocais com Demucs (use se a fonte já for a cappella)")
     ap.add_argument("--no-remix", dest="remix", action="store_false",
@@ -88,15 +90,19 @@ def main() -> None:
             # 2. converter o vocal para o timbre alvo (Seed-VC; usa checkpoint se houver)
             converted = work / f"{song.stem}__{target}_voc.wav"
             convert(source, reference, converted, profile=profile, semitone_shift=args.semitone,
+                    diffusion_steps=args.diffusion_steps,
                     checkpoint=args.checkpoint, config=args.config)
 
-            # 3. remixar com o instrumental original (ou só o vocal convertido)
+            # 3. salva SEMPRE o vocal isolado convertido (serve p/ animar o avatar — lip-sync)
+            voc, sr = audio.load_wav(converted)
+            vocal_out = out_dir / f"{song.stem}__{target}_vocal.wav"
+            audio.save_wav(vocal_out, voc, sr)
+
+            # 4. saída principal: mix com o instrumental original (ou só o vocal)
             if args.separate and args.remix and instrumental:
-                voc, sr = audio.load_wav(converted)
                 inst, _ = audio.load_wav(instrumental, sr=sr)
                 audio.save_wav(out, audio.mix(voc, inst), sr)
             else:
-                voc, sr = audio.load_wav(converted)
                 audio.save_wav(out, voc, sr)
             done.append(out)
         except Exception as e:  # noqa: BLE001

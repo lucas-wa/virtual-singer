@@ -61,6 +61,7 @@ srun singularity exec \
         export CANTORES_ROOT="${CANTORES_ROOT:-singers}"   # raiz das pastas de cantores
         export COVER_LIMIT="${COVER_LIMIT:-0}"              # nº máx. de músicas (0=todas)
         export COVER_SEMITONE="${COVER_SEMITONE:-0}"        # transposição
+        export COVER_STEPS="${COVER_STEPS:-50}"             # diffusion-steps (80GB: 50-100)
         export COVER_SEPARATE="${COVER_SEPARATE:-1}"        # 1=separar vocais (Demucs) | 0=não
         export COVER_REMIX="${COVER_REMIX:-1}"              # 1=remixar c/ instrumental | 0=só vocal
         export COVER_CHECKPOINT="${COVER_CHECKPOINT:-}"     # checkpoint fine-tunado (opcional)
@@ -104,6 +105,7 @@ srun singularity exec \
             --out-dir "out/covers_${TARGET_SINGER}" \
             --limit "$COVER_LIMIT" \
             --semitone "$COVER_SEMITONE" \
+            --diffusion-steps "$COVER_STEPS" \
             $COVER_ARGS
     '
 

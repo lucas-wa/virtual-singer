@@ -59,7 +59,11 @@ srun singularity exec \
 
         # ---- PARÂMETROS (defina no slurm/.env) ----
         export AVATAR_IMAGE="${AVATAR_IMAGE:?defina AVATAR_IMAGE no slurm/.env (foto do rosto)}"
+        # AVATAR_AUDIO = áudio que ANIMA (ideal: só o vocal -> melhor lip-sync).
         export AVATAR_AUDIO="${AVATAR_AUDIO:-out/vocalset_female1_demo.wav}"
+        # AVATAR_FINAL_AUDIO = trilha final do vídeo (ex.: a mix completa); vazio = usa o AVATAR_AUDIO.
+        export AVATAR_FINAL_AUDIO="${AVATAR_FINAL_AUDIO:-}"
+        export AVATAR_SIZE="${AVATAR_SIZE:-512}"            # 512 = melhor (80GB sobra)
         export AVATAR_OUT="${AVATAR_OUT:-out/avatar.mp4}"
         # -------------------------------------------
 
@@ -100,9 +104,12 @@ srun singularity exec \
         # Corrige o basicsr p/ torchvision novo (functional_tensor removido em >=0.17).
         python3 scripts/patch_sadtalker_env.py
 
-        echo "[avatar] gerando vídeo: $AVATAR_IMAGE + $AVATAR_AUDIO -> $AVATAR_OUT"
+        FINAL_ARG=""
+        [ -n "$AVATAR_FINAL_AUDIO" ] && FINAL_ARG="--final-audio $AVATAR_FINAL_AUDIO"
+
+        echo "[avatar] anima com $AVATAR_AUDIO | trilha final: ${AVATAR_FINAL_AUDIO:-(mesma)} | size=$AVATAR_SIZE"
         python3 scripts/make_avatar.py --image "$AVATAR_IMAGE" \
-            --audio "$AVATAR_AUDIO" --out "$AVATAR_OUT"
+            --audio "$AVATAR_AUDIO" --size "$AVATAR_SIZE" --out "$AVATAR_OUT" $FINAL_ARG
     '
 
 echo "=== Concluído: $(date) ==="
