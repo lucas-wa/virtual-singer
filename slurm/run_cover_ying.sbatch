@@ -71,11 +71,15 @@ srun singularity exec \
         fi
         # Clona YingMusic + baixa checkpoints (idempotente).
         python3 scripts/setup_models.py --with-yingmusic
-        if [ ! -f "$YM_MARKER" ]; then
-            [ -f third_party/YingMusic-SVC/requirements.txt ] && \
-                python3 -m pip install --prefer-binary -r third_party/YingMusic-SVC/requirements.txt
-            touch "$YM_MARKER"
+        # Deps do REPO YingMusic — SEMPRE (fora do marker): repo de pesquisa com
+        # requirements às vezes incompleto, e um marker antigo pulava esta etapa.
+        # Idempotente (pip não reinstala o que já está satisfeito).
+        if [ -f third_party/YingMusic-SVC/requirements.txt ]; then
+            python3 -m pip install --prefer-binary -r third_party/YingMusic-SVC/requirements.txt
         fi
+        # deps comuns que faltam em requirements de pesquisa:
+        python3 -m pip install --prefer-binary munch
+        touch "$YM_MARKER"
 
         # ffmpeg empacotado no PATH + patch do Demucs (in-place fix).
         FF="$(python3 -c "import imageio_ffmpeg; print(imageio_ffmpeg.get_ffmpeg_exe())" 2>/dev/null || true)"
