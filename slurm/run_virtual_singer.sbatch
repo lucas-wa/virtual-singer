@@ -77,23 +77,40 @@ srun singularity exec \
         export OUT="${OUT:-out/${VOICE_NAME}_${SONG}.wav}"
         # --------------------------------------------------------------------------
 
-        # Dependências: o container já traz torch+CUDA (não reinstalar).
-        # PADRÃO usa Seed-VC (timbre zero-shot, SEM fairseq) -> roda em Python 3.12.
-        python3 -m pip install --quiet -r requirements.txt
+        # ---- Dependências: instaladas UMA vez; persistem no volume -----------------
+        # Com --no-home o pip instala em $HOME/.local = /work/.home/.local (no /raid,
+        # persistente). Wheels ficam em PIP_CACHE_DIR. Um "marker" evita reinstalar a
+        # cada run. Para forçar reinstalação: submeta com REINSTALL=1 no slurm/.env.
+        DEPS_MARKER="/work/.home/.deps_ok_v1"
+        AVATAR_DEPS_MARKER="/work/.home/.avatar_deps_ok_v1"
+        [ -n "${REINSTALL:-}" ] && rm -f "$DEPS_MARKER" "$AVATAR_DEPS_MARKER"
 
-        # Baixa o que o experimento precisa (avatar permitido aqui — não é Colab).
+        # requirements.txt precisa estar instalado ANTES do setup_models (usa huggingface_hub).
+        if [ ! -f "$DEPS_MARKER" ]; then
+            python3 -m pip install -r requirements.txt
+        else
+            echo "[deps] já instaladas (marker presente) — pulando pip. REINSTALL=1 força."
+        fi
+
+        # Baixa repos/modelos (idempotente: git clone e downloads HF pulam se já existem).
         SETUP_FLAGS="--with-avatar --with-diffsinger"
         [ "$ENGINE" = "diffsinger" ] && SETUP_FLAGS="$SETUP_FLAGS --with-diffsinger"
         [ -n "$AVATAR_IMAGE" ]       && SETUP_FLAGS="$SETUP_FLAGS --with-avatar"
         python3 scripts/setup_models.py $SETUP_FLAGS
 
-        # Instala as deps do Seed-VC (do próprio repo clonado).
-        [ -f third_party/seed-vc/requirements.txt ] && \
-            python3 -m pip install -r third_party/seed-vc/requirements.txt
+        # Deps do Seed-VC (do repo clonado) — mesma marca; finaliza o marker ao concluir.
+        if [ ! -f "$DEPS_MARKER" ]; then
+            [ -f third_party/seed-vc/requirements.txt ] && \
+                python3 -m pip install -r third_party/seed-vc/requirements.txt
+            touch "$DEPS_MARKER"
+        fi
 
-        # Se o avatar estiver ligado, instala também as deps do SadTalker.
-        [ -n "$AVATAR_IMAGE" ] && [ -f third_party/SadTalker/requirements.txt ] && \
+        # Deps do SadTalker (só se avatar ligado), com marker próprio.
+        if [ -n "$AVATAR_IMAGE" ] && [ ! -f "$AVATAR_DEPS_MARKER" ] && \
+           [ -f third_party/SadTalker/requirements.txt ]; then
             python3 -m pip install -r third_party/SadTalker/requirements.txt
+            touch "$AVATAR_DEPS_MARKER"
+        fi
 
         # Pipeline ponta a ponta: voz-guia (DSP) -> timbre (Seed-VC) -> [avatar].
         bash scripts/run_all.sh
