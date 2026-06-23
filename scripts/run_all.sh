@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# Runner headless da pipeline do Cantor Virtual (para SLURM/Singularity ou local).
-# Faz: (partitura) -> [voz pronta opcional] -> treino RVC -> síntese -> [avatar].
-# Tudo parametrizado por variáveis de ambiente (com defaults sensatos).
+# Runner headless de ÁUDIO do Cantor Virtual (SLURM/Singularity ou local).
+# Faz: (partitura) -> [voz pronta opcional] -> síntese (DSP + Seed-VC zero-shot) -> .wav
+# O AVATAR é um job/etapa SEPARADA (scripts/make_avatar.py / slurm/run_avatar.sbatch),
+# porque o SadTalker exige Python 3.10. Aqui é só áudio.
 set -euo pipefail
 
 # ---- parâmetros (sobrescreva via env) --------------------------------------
@@ -9,9 +10,7 @@ SONG="${SONG:-demo}"                       # pasta em data/songs/
 VOICE_NAME="${VOICE_NAME:-vocalset_female1}"
 VOICE_SOURCE="${VOICE_SOURCE:-vocalset:female1}"  # vocalset:<singer> | path:<dir> | existing
 ENGINE="${ENGINE:-dsp}"                    # dsp (padrão) | diffsinger
-EPOCHS="${EPOCHS:-100}"                    # épocas de treino do RVC
 MAX_FILES="${MAX_FILES:-80}"               # limite de arquivos da VocalSet
-AVATAR_IMAGE="${AVATAR_IMAGE:-}"           # caminho de imagem | "synthetic" | vazio
 TRANSPOSE="${TRANSPOSE:-0}"
 OUT="${OUT:-out/${VOICE_NAME}_${SONG}.wav}"
 
@@ -51,22 +50,13 @@ esac
 # ---- 4. (sem treino) — Seed-VC é zero-shot: usa os clipes de referência direto ----
 echo "[seed-vc] timbre zero-shot — sem etapa de treino; referência em data/voices/$VOICE_NAME"
 
-# ---- 5. avatar opcional -----------------------------------------------------
-AVATAR_ARGS=()
-if [ "$AVATAR_IMAGE" = "synthetic" ]; then
-    python3 scripts/get_face.py --name avatar_synthetic
-    AVATAR_ARGS=(--avatar-image data/faces/avatar_synthetic.jpg)
-elif [ -n "$AVATAR_IMAGE" ]; then
-    AVATAR_ARGS=(--avatar-image "$AVATAR_IMAGE")
-fi
-
-# ---- 6. síntese final -------------------------------------------------------
+# ---- 5. síntese (áudio) -----------------------------------------------------
 python3 -m src.pipeline \
     --song "data/songs/$SONG" \
     --voice "$VOICE_NAME" \
     --engine "$ENGINE" \
     --transpose "$TRANSPOSE" \
-    --out "$OUT" \
-    "${AVATAR_ARGS[@]}"
+    --out "$OUT"
 
 echo "=== run_all concluído -> $OUT ==="
+echo "Para o avatar (rosto cantando): rode o job slurm/run_avatar.sbatch (container py3.10)."

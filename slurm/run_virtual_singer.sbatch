@@ -73,7 +73,7 @@ srun singularity exec \
         export VOICE_NAME="${VOICE_NAME:-vocalset_female1}"
         export VOICE_SOURCE="${VOICE_SOURCE:-vocalset:female1}"  # vocalset:<singer> | path:<dir> | existing
         export ENGINE="${ENGINE:-dsp}"                       # dsp (sempre roda) | diffsinger
-        export AVATAR_IMAGE="${AVATAR_IMAGE:-/work/ufg/pav/virtual-singer/data/faces/sabrina.jpg}"              # vazio | "synthetic" | caminho de imagem
+        export AVATAR_IMAGE="${AVATAR_IMAGE:-}"              # vazio | "synthetic" | caminho de imagem
         export OUT="${OUT:-out/${VOICE_NAME}_${SONG}.wav}"
         # --------------------------------------------------------------------------
 
@@ -99,13 +99,13 @@ srun singularity exec \
             echo "[deps] já instaladas (marker presente) — pulando pip. REINSTALL=1 força."
         fi
 
-        # Baixa repos/modelos (idempotente: git clone e downloads HF pulam se já existem).
-        SETUP_FLAGS="--with-avatar --with-diffsinger"
-        [ "$ENGINE" = "diffsinger" ] && SETUP_FLAGS="$SETUP_FLAGS --with-diffsinger"
-        [ -n "$AVATAR_IMAGE" ]       && SETUP_FLAGS="$SETUP_FLAGS --with-avatar"
+        # Baixa só o necessário p/ ÁUDIO. AVATAR é job separado (py3.10) -> NÃO baixa SadTalker
+        # aqui (ele nem instala no py3.12). DiffSinger só se ENGINE=diffsinger.
+        SETUP_FLAGS=""
+        [ "$ENGINE" = "diffsinger" ] && SETUP_FLAGS="--with-diffsinger"
         python3 scripts/setup_models.py $SETUP_FLAGS
 
-        # Deps do Seed-VC (do repo clonado) — mesma marca; finaliza o marker ao concluir.
+        # Deps do Seed-VC (do repo clonado) — finaliza o marker ao concluir.
         if [ ! -f "$DEPS_MARKER" ]; then
             if [ -f third_party/seed-vc/requirements.txt ]; then
                 echo "[deps] >>> instalando requirements do Seed-VC..."
@@ -115,18 +115,7 @@ srun singularity exec \
             touch "$DEPS_MARKER"
         fi
 
-        # Deps do SadTalker (só se avatar ligado), com marker próprio.
-        # AVISO: SadTalker (2023) fixa numpy/pacotes velhos que NÃO compilam no Python 3.12.
-        # Para o avatar, use um container Python 3.10 OU rode o avatar fora deste job.
-        if [ -n "$AVATAR_IMAGE" ] && [ ! -f "$AVATAR_DEPS_MARKER" ] && \
-           [ -f third_party/SadTalker/requirements.txt ]; then
-            echo "[deps] >>> instalando requirements do SadTalker (avatar)..."
-            python3 -m pip install --no-build-isolation --prefer-binary \
-                -r third_party/SadTalker/requirements.txt
-            touch "$AVATAR_DEPS_MARKER"
-        fi
-
-        # Pipeline ponta a ponta: voz-guia (DSP) -> timbre (Seed-VC) -> [avatar].
+        # Áudio: voz-guia (DSP) -> timbre (Seed-VC). O avatar roda no slurm/run_avatar.sbatch.
         bash scripts/run_all.sh
     '
 
