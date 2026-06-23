@@ -110,9 +110,15 @@ def _download_and_extract_zip(url: str, dest_dir: Path) -> None:
 
 
 def _clone(url: str, dest: Path) -> None:
-    if dest.exists():
-        print(f"  = já existe: {dest}")
+    # Clone completo só se tiver .git. Se a pasta existe SEM .git (clone anterior que
+    # falhou e deixou diretório parcial/vazio), remove e clona de novo.
+    if (dest / ".git").exists():
+        print(f"  = já existe (completo): {dest}")
         return
+    if dest.exists():
+        import shutil
+        print(f"  ! {dest} existe mas está incompleto (sem .git) — removendo e re-clonando")
+        shutil.rmtree(dest, ignore_errors=True)
     print(f"  ⧉ git clone {url}")
     try:
         subprocess.run(["git", "clone", "--depth", "1", url, str(dest)], check=True)
