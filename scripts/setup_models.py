@@ -47,6 +47,16 @@ RVC_REPO_URL = "https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-
 DIFFSINGER_REPO_URL = "https://github.com/openvpi/DiffSinger.git"
 SADTALKER_REPO_URL = "https://github.com/OpenTalker/SadTalker.git"
 YINGMUSIC_REPO_URL = "https://github.com/GiantAILab/YingMusic-SVC.git"
+TCSINGER_REPO_URL = "https://github.com/AaronZ345/TCSinger.git"
+# Checkpoints do TCSinger (HF) -> vão para third_party/TCSinger/checkpoints/<...> (o repo
+# espera `--exp_name checkpoints/SDLM`). O phone set já vem no git clone.
+TCSINGER_FILES = [
+    ("checkpoints/SAD/model_ckpt_steps_80000.ckpt",),
+    ("checkpoints/SDLM/model_ckpt_steps_120000.ckpt",),
+    ("checkpoints/TCSinger/model_ckpt_steps_200000.ckpt",),
+    ("checkpoints/hifigan/config.yaml",),
+    ("checkpoints/hifigan/model_ckpt_steps_1000000.ckpt",),
+]
 # Checkpoints do YingMusic-SVC (HF). Modelo final RL + separador de acompanhamento.
 YINGMUSIC_FILES = [
     ("GiantAILab/YingMusic-SVC", "YingMusic-SVC-full.pt",
@@ -157,6 +167,13 @@ def setup_yingmusic() -> None:
         _hf_download(repo, fname, dest)
 
 
+def setup_tcsinger() -> None:
+    print("[TCSinger] clonando repo + checkpoints (estilo de canto; precisa py3.10)")
+    _clone(TCSINGER_REPO_URL, paths.TCSINGER_REPO)
+    for (rel,) in TCSINGER_FILES:
+        _hf_download("AaronZ345/TCSinger", rel, paths.TCSINGER_REPO / rel)
+
+
 def setup_avatar() -> None:
     print("[SadTalker] AVISO: NÃO rode isto no Colab grátis (proíbe face-animation).")
     print("[SadTalker] clonando repo + checkpoints do avatar")
@@ -168,6 +185,7 @@ def setup_avatar() -> None:
 COMPONENTS = {
     "seedvc": setup_seedvc,
     "yingmusic": setup_yingmusic,
+    "tcsinger": setup_tcsinger,
     "rvc": setup_rvc,
     "vocoder": setup_vocoder,
     "diffsinger": setup_diffsinger,
@@ -183,6 +201,8 @@ def main() -> None:
     ap.add_argument("--only", choices=list(COMPONENTS), help="baixar apenas um componente")
     ap.add_argument("--with-yingmusic", action="store_true",
                     help="incluir o YingMusic-SVC (SVC SOTA, zero-shot; precisa de Python 3.10).")
+    ap.add_argument("--with-tcsinger", action="store_true",
+                    help="incluir o TCSinger (transferência de estilo de canto; precisa Python 3.10).")
     ap.add_argument("--with-rvc", action="store_true",
                     help="incluir RVC (timbre por treino; precisa de Python 3.10 + fairseq).")
     ap.add_argument("--with-diffsinger", action="store_true",
@@ -199,6 +219,8 @@ def main() -> None:
         targets = list(AUDIO_COMPONENTS)
         if args.with_yingmusic:
             targets.append("yingmusic")
+        if args.with_tcsinger:
+            targets.append("tcsinger")
         if args.with_rvc:
             targets.append("rvc")
         if args.with_diffsinger:
