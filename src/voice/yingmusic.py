@@ -28,6 +28,31 @@ def _newest_wav(folder: Path, since: float) -> Path | None:
     return max(wavs, key=lambda p: p.stat().st_mtime) if wavs else None
 
 
+def _ffmpeg_exe() -> str:
+    try:
+        import imageio_ffmpeg
+        return imageio_ffmpeg.get_ffmpeg_exe()
+    except Exception:  # noqa: BLE001
+        return "ffmpeg"
+
+
+def _normalize(src: Path, work: Path, sr: int = 44100) -> Path:
+    """Converte para WAV `sr` Hz (preserva canais). Formatos/SR inesperados são causa
+    clássica do 'terminated unexpectedly'. Se a conversão falhar, devolve o original.
+    """
+    work.mkdir(parents=True, exist_ok=True)
+    out = work / f"{src.stem}_{sr}.wav"
+    if out.exists():
+        return out
+    cmd = [_ffmpeg_exe(), "-y", "-i", str(src), "-ar", str(sr), str(out)]
+    try:
+        subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        return out
+    except Exception as e:  # noqa: BLE001
+        print(f"[yingmusic] aviso: normalização falhou p/ {src.name} ({e}); usando original")
+        return src
+
+
 def convert(source_vocal: str | Path, reference: str | Path, out_wav: str | Path,
             accompany: str | Path | None = None, profile: RuntimeProfile | None = None,
             diffusion_steps: int = 100, checkpoint: str | Path | None = None) -> Path:
@@ -52,6 +77,12 @@ def convert(source_vocal: str | Path, reference: str | Path, out_wav: str | Path
     if not ckpt.exists():
         raise RuntimeError(f"checkpoint do YingMusic não encontrado: {ckpt}")
 
+    # Normaliza entradas p/ WAV 44.1k (remove uma causa comum de falha por formato/SR).
+    work = (out_wav.parent / "_ying_work").resolve()
+    source_vocal = _normalize(source_vocal, work)
+    reference = _normalize(reference, work)
+    accompany_norm = _normalize(Path(accompany).resolve(), work) if accompany else None
+
     expname = f"vsinger_{out_wav.stem}"
     import time
     since = time.time()
@@ -66,12 +97,20 @@ def convert(source_vocal: str | Path, reference: str | Path, out_wav: str | Path
         "--fp16", "True" if profile.use_fp16 else "False",
         "--config", YING_CONFIG,
     ]
-    if accompany:
-        cmd += ["--accompany", str(Path(accompany).resolve())]
+    if accompany_norm:
+        cmd += ["--accompany", str(accompany_norm)]
 
     print(f"[yingmusic] {profile.summary()} | steps={diffusion_steps} | mix={bool(accompany)}")
     print(f"[yingmusic] $ {' '.join(cmd)}")
-    subprocess.run(cmd, check=True, cwd=str(paths.YINGMUSIC_REPO))
+    try:
+        subprocess.run(cmd, check=True, cwd=str(paths.YINGMUSIC_REPO))
+    except subprocess.CalledProcessError as e:
+        raise RuntimeError(
+            f"YingMusic falhou (exit {e.returncode}). Veja o log acima do my_inference.py. "
+            "Causas comuns: OOM (reduza --diffusion-steps ou use fonte mais curta), "
+            "instabilidade fp16 (tente fp16=False), ou problema no --accompany "
+            "(teste sem acompanhamento para isolar)."
+        ) from e
 
     # O my_inference.py escreve em uma pasta do repo (results/<expname>...); pega o mais novo.
     produced = _newest_wav(paths.YINGMUSIC_REPO, since)
